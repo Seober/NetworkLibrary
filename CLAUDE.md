@@ -70,10 +70,46 @@ NetworkLibrary/
 다음 규칙은 사용자가 명시적으로 정의한 것이며, 모든 작업에 우선합니다:
 
 1. **코드 변경 전 항상 사전 승인** — 한 줄 변경이라도 동일
-2. **git commit/push 전 사용자 확인** — 커밋 메시지는 **한글로 제안** 후 승인 (메시지 컨벤션 미정의)
+2. **git commit/push 전 사용자 확인** — 커밋 메시지는 **한글로 제안** 후 승인 (아래 "커밋 메시지 컨벤션" 참고)
 3. **CLAUDE.md 변경도 사전 확인**
 4. **결함 단정 금지** — "의심 → 정독 → 의도 확인 → 합의" 절차 준수. 23년 코드의 의심 패턴 다수가 사용자 의도일 수 있음
 5. **100% 확신 없으면 짐작·추론 금지** — 사용자에게 묻거나 코드·공식 문서·표준 명세로 확정 후 진행
+
+### 커밋 메시지 컨벤션
+
+Conventional Commits 형식 (영어 타입 + 한글 description):
+
+```
+<타입>: <한글 description>
+
+(본문 — 필요 시)
+```
+
+사용 타입 (Conventional Commits 표준):
+- `feat` — 새 기능
+- `fix` — 버그·오타·결함 수정
+- `docs` — 문서 변경
+- `style` — 코드 스타일 (포맷팅, 공백)
+- `refactor` — 동작 변화 없는 구조 개선·코드 정리
+- `perf` — 성능 개선
+- `test` — 테스트 추가·수정
+- `build` — 빌드 시스템·외부 의존성 (vcxproj, sln, CMake)
+- `ci` — CI 설정
+- `chore` — 그 외 잡일
+
+규칙:
+- description은 한글, **마침표 없음**, 명사형 종결 (`추가`, `제거`, `재구성`)
+- en-dash(`—`)로 부가 설명 구분
+- 가운뎃점(`·`)으로 항목 나열
+- 영어 식별자(파일명·클래스명·vcxproj 등)는 그대로 표기
+- 본문이 필요할 때만 추가 (단순 cleanup은 제목만)
+- BREAKING CHANGE 표기는 `feat!:` 또는 footer `BREAKING CHANGE:`
+
+도구 호환:
+- commitlint, semantic-release, conventional-changelog 등 표준 도구와 호환
+- commitlint의 한글-비호환 규칙(`subject-case`, `subject-full-stop`)은 설정으로 disable
+
+라벨이 모호하거나 빠진 경우는 그때 보완 → Phase 1+2 종료 시 정리해서 user-level로 승격.
 
 ### 환경 한계 (작업 분담)
 
