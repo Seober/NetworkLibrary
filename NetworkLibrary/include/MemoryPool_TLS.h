@@ -134,6 +134,17 @@ public:
 		_iChunckSize = ChunckPool->GetChunckSize();
 	}
 
+	~MemoryPool_TLS_Node()
+	{
+		while (_Head != NULL)
+		{
+			stNode* pNext = _Head->pNext;
+			delete _Head;
+			_Head = pNext;
+		}
+		_iFreeNodeCnt = 0;
+	}
+
 	void SetTLS(void)
 	{
 		TlsSetValue(ChunckPool->GetTLSIndex(), this);
@@ -193,8 +204,8 @@ private:
 private:
 	MemoryPool_TLS_Chunck<T>* ChunckPool;
 
-	stNode* volatile _Head;
+	stNode* _Head;
 
-	volatile int _iFreeNodeCnt;
+	int _iFreeNodeCnt;
 	int _iChunckSize;
 };
