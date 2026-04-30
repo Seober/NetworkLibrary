@@ -20,7 +20,7 @@ public:
 	struct stSESSION
 	{
 		bool SessionUseFlag;
-		alignas(16) LONG64 ReleaseArr[2];
+		alignas(16) volatile LONG64 ReleaseArr[2];
 		unsigned __int64 SessionID;
 
 		char LastAction;
