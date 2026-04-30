@@ -79,7 +79,7 @@ public:
 
 
 private:
-	inline DWORD GetTagCnt(void) { return InterlockedIncrement16(&_TagCnt); }
+	inline WORD GetTagCnt(void) { return InterlockedIncrement16(&_TagCnt); }
 	inline stNode* AllocNode(void)
 	{
 		MemoryPool_TLS_Node<stNode>* pNodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetTLSIndex());
