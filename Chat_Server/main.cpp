@@ -10,8 +10,6 @@
 #include "Logger.h"
 #include "Monitoring_Tool.h"
 
-#include "MonitorClient.h"
-
 
 #define SERVER_IP NULL
 #define SERVER_PORT 12001
@@ -37,19 +35,9 @@ int main(void)
 	if (NagleFlag) NagleFlag = FALSE;
 	else NagleFlag = TRUE;
 
-	BOOL MonitorFlag;
-	wprintf(L"Use Monitor[0:OFF, 1:ON] : ");
-	scanf_s("%d", &MonitorFlag);
-
 	Chat_Server Server(MAX_USER);
 	/*Server.CreateContentThread(true);*/
 	if (!Server.Start(SERVER_IP, SERVER_PORT, ProcessorCnt, 0, NagleFlag, MAX_USER * 2)) return 0;
-
-	MonitorClient MonitorClient(1);
-	if (MonitorFlag)
-	{
-		if (MonitorClient.Connect(L"192.168.10.101", 10101, 2, 0, true) == false) return 0;
-	}
 
 	DWORD dwMainThreadID = GetCurrentThreadId();
 	WCHAR ControlKey;
@@ -104,25 +92,6 @@ int main(void)
 		ProcessorAvailableMemory = Monitor.AvailableMemory();
 
 		time((time_t*)&CurTime);
-		if (MonitorFlag)
-		{
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SERVER_RUN, 1, CurTime);
-
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SERVER_CPU, ProcessUseCPUTotal, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SERVER_MEM, ProcessUseMemory, CurTime);
-
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SESSION, SessionCnt, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_PLAYER, UserCnt, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_UPDATE_TPS, JobTPS, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_PACKET_POOL, UsePacketPool, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_UPDATEMSG_POOL, UseJobPool, CurTime);
-
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_CPU_TOTAL, ProcessorUseCPUTotal, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_NONPAGED_MEMORY, ProcessorNonPagedMemory, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_RECV, ProcessorNetworkRecv, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_SEND, ProcessorNetworkSend, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_AVAILABLE_MEMORY, ProcessorAvailableMemory, CurTime);
-		}
 
 		wprintf(L"\n====================================[LoopCnt:%I64u]=====================================\n", LoopCnt++);
 		wprintf(L"SessionCnt:%d, CharacterCnt:%d\n\n", SessionCnt, UserCnt);

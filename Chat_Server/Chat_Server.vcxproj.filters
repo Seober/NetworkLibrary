@@ -46,12 +46,6 @@
     <Filter Include="LOG\CRASHDUMP">
       <UniqueIdentifier>{f99ce4bc-00c7-403e-a900-508aaf02854b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="NETWORK\CLAN">
-      <UniqueIdentifier>{c0f26cab-3a7b-4949-ac1d-a34598fbefa8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="MONITORCLIENT">
-      <UniqueIdentifier>{ac7045c3-32b1-4a9b-a566-8d29a936b893}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Protocol.h">
@@ -87,12 +81,6 @@
     <ClInclude Include="Logger.h">
       <Filter>LOG</Filter>
     </ClInclude>
-    <ClInclude Include="CLan_Client.h">
-      <Filter>NETWORK\CLAN</Filter>
-    </ClInclude>
-    <ClInclude Include="MonitorClient.h">
-      <Filter>MONITORCLIENT</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CNet_Server.cpp">
@@ -118,9 +106,6 @@
     </ClCompile>
     <ClCompile Include="Logger.cpp">
       <Filter>LOG</Filter>
-    </ClCompile>
-    <ClCompile Include="CLan_Client.cpp">
-      <Filter>NETWORK\CLAN</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

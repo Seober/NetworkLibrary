@@ -142,7 +142,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CLan_Client.h" />
     <ClInclude Include="CNet_Server.h" />
     <ClInclude Include="Content.h" />
     <ClInclude Include="CPacket.h" />
@@ -152,12 +151,10 @@
     <ClInclude Include="Logger.h" />
     <ClInclude Include="MemoryPool_LF.h" />
     <ClInclude Include="MemoryPool_TLS.h" />
-    <ClInclude Include="MonitorClient.h" />
     <ClInclude Include="Monitoring_Tool.h" />
     <ClInclude Include="Protocol.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CLan_Client.cpp" />
     <ClCompile Include="CNet_Server.cpp" />
     <ClCompile Include="Content.cpp" />
     <ClCompile Include="CPacket.cpp" />
