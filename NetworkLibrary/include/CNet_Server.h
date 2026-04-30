@@ -39,7 +39,7 @@ public:
 
 		CPacket* SendBuffer[1000];
 
-		inline int IncrementSessionRef() { return InterlockedIncrement64(&ReleaseArr[1]); }
+		inline LONG64 IncrementSessionRef() { return InterlockedIncrement64(&ReleaseArr[1]); }
 		inline LONG64 DecrementSessionRef() { return InterlockedDecrement64(&ReleaseArr[1]); }
 	};
 
