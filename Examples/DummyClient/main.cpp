@@ -14,27 +14,37 @@
 
 #define DEFAULT_IP "127.0.0.1"
 #define DEFAULT_PORT 12001
-#define DEFAULT_N 100
-#define DEFAULT_MSG_INTERVAL_MS 1000
 #define IDEAL_PER_THREAD 256
 
 int wmain(int argc, WCHAR* argv[])
 {
-	// 인자 파싱
+	// IP/Port는 args (기본값 fallback), N·MessageInterval은 콘솔 입력
 	char serverIp[64] = DEFAULT_IP;
 	int serverPort = DEFAULT_PORT;
-	int N = DEFAULT_N;
-	int messageInterval = DEFAULT_MSG_INTERVAL_MS;
+	int N = 0;
+	int messageInterval = 0;
 
 	if (argc >= 2) WideCharToMultiByte(CP_ACP, 0, argv[1], -1, serverIp, sizeof(serverIp), NULL, NULL);
 	if (argc >= 3) serverPort = _wtoi(argv[2]);
-	if (argc >= 4) N = _wtoi(argv[3]);
-	if (argc >= 5) messageInterval = _wtoi(argv[4]);
 
-	if (N <= 0 || serverPort <= 0)
+	if (serverPort <= 0)
 	{
-		wprintf(L"Usage: DummyClient.exe [IP] [Port] [N] [MessageInterval_ms]\n");
-		wprintf(L"Default: %hs %d %d %d\n", DEFAULT_IP, DEFAULT_PORT, DEFAULT_N, DEFAULT_MSG_INTERVAL_MS);
+		wprintf(L"Usage: DummyClient.exe [IP] [Port]\n");
+		wprintf(L"Default: %hs %d\n", DEFAULT_IP, DEFAULT_PORT);
+		return 1;
+	}
+
+	wprintf(L"=== DummyClient v1 ===\n");
+	wprintf(L"Server: %hs:%d\n\n", serverIp, serverPort);
+
+	wprintf(L"Input Client Count : ");
+	wscanf_s(L"%d", &N);
+	wprintf(L"Input Message Interval (ms) : ");
+	wscanf_s(L"%d", &messageInterval);
+
+	if (N <= 0 || messageInterval <= 0)
+	{
+		wprintf(L"Invalid input — Client Count and Message Interval must be positive\n");
 		return 1;
 	}
 
@@ -50,9 +60,7 @@ int wmain(int argc, WCHAR* argv[])
 	int basePerThread = N / threadCount;
 	int remainder = N % threadCount;
 
-	wprintf(L"=== DummyClient v1 ===\n");
-	wprintf(L"Server: %hs:%d\n", serverIp, serverPort);
-	wprintf(L"Total Clients: %d\n", N);
+	wprintf(L"\nTotal Clients: %d\n", N);
 	wprintf(L"Processors: %u, Worker Threads: %d\n", processorCount, threadCount);
 	wprintf(L"Per-thread: %d (+%d for first %d threads)\n", basePerThread, remainder ? 1 : 0, remainder);
 	wprintf(L"Message Interval: %d ms\n", messageInterval);
