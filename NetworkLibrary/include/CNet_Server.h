@@ -31,7 +31,7 @@ public:
 		OVERLAPPED SendOverlapped;
 		OVERLAPPED RecvOverlapped;
 
-		DWORD dwSendFlag;
+		volatile DWORD dwSendFlag;
 		DWORD dwSendPacketCnt;
 
 		LockFree_Queue_TLS<CPacket*> SendQ;
