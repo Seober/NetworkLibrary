@@ -86,21 +86,15 @@ unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter)
 	CNet_Server::stSESSION* targetSession;
 	OVERLAPPED* tmpOverlapped;
 
-	DWORD Err_Code = NULL;
 	while (1)
 	{
-		int retval_GQCS = GetQueuedCompletionStatus(pServer->h_IOCP, &dwTransferred, (PULONG_PTR)&targetSession, &tmpOverlapped, INFINITE);
-		if (retval_GQCS == 0)
-		{
-			Err_Code = GetLastError();
-		}
+		GetQueuedCompletionStatus(pServer->h_IOCP, &dwTransferred, (PULONG_PTR)&targetSession, &tmpOverlapped, INFINITE);
 
 		if (dwTransferred == 0 && targetSession == NULL && tmpOverlapped == NULL)
 		{
 			pLogger->Log(L"Network", Logger::en_LOG_LEVEL::eLEVEL_SYSTEM, L"# GQCS return NULL");
 			pLogger->Crash();
-			// Post에 의한 스레드 종료 절차
-			continue;
+			break;
 		}
 
 		if (dwTransferred != 0)
