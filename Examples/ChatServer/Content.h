@@ -79,7 +79,7 @@ public:
 
 public:
 	//LOG
-	int GetCharacterSize(void) { return CharacterMap.size(); }
+	int GetCharacterSize(void) { return (int)CharacterMap.size(); }
 	int RemainJob(void) { return JobQueue.GetUseSize(); }
 	int GetThreadRunningTime(void) { return InterlockedExchange(&UpdateThreadSleepTime, 0); }
 	int GetThreadRunningTPS(void) { return InterlockedExchange(&UpdateThreadRunningTPS, 0); }

@@ -73,7 +73,7 @@ int main(void)
 		Server.GetTransmit(TransmitBuffer);
 		Monitor.UpdateAll();
 
-		ProcessUseCPUTotal = Monitor.ProcessTotal();
+		ProcessUseCPUTotal = (int)Monitor.ProcessTotal();
 		ProcessUseMemory = Monitor.ProcessUserAllocMemory() / 1000000;
 
 		SessionCnt = Server.GetSessionCnt_Connected();
@@ -82,10 +82,10 @@ int main(void)
 		UsePacketPool = Server.Log_GetPacketPoolUse();
 		UseJobPool = Server.Log_GetJobPoolUse();
 		
-		ProcessorUseCPUTotal = Monitor.ProcessorTotal();
+		ProcessorUseCPUTotal = (int)Monitor.ProcessorTotal();
 		ProcessorNonPagedMemory = Monitor.NonpagedMemory() / 1000000;
-		ProcessorNetworkRecv = Monitor.NetworkRecvBytes() / 1000;
-		ProcessorNetworkSend = Monitor.NetworkSendBytes() / 1000;
+		ProcessorNetworkRecv = (int)(Monitor.NetworkRecvBytes() / 1000);
+		ProcessorNetworkSend = (int)(Monitor.NetworkSendBytes() / 1000);
 		ProcessorAvailableMemory = Monitor.AvailableMemory();
 
 		time((time_t*)&CurTime);

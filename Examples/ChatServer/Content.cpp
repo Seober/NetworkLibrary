@@ -30,7 +30,7 @@ Chat_Server::Chat_Server(int MaxUser, bool HeartBeatFlag)
 
 bool Chat_Server::OnConnectionRequest()
 {
-	if (GetCharacterSize() < _MaxUser) return true;
+	if (GetCharacterSize() < (int)_MaxUser) return true;
 	else return false;
 }
 
