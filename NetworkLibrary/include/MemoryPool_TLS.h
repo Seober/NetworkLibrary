@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "LockFree_Stack.h"
 #include "MemoryPool_LF.h"

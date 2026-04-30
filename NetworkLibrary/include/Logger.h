@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "CrashDump.h"
 
 #define df_LOG_BUFSIZE_FILENAME 64

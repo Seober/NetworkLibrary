@@ -1,4 +1,4 @@
-#include "Logger.h"
+﻿#include "Logger.h"
 #include <strsafe.h>
 
 long Logger::Key_Singleton = 0;
