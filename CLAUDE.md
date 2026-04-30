@@ -41,7 +41,7 @@ NetworkLibrary/
 
 ## 빌드
 
-**Windows (현재)**: Visual Studio 2022 (v143 toolset). `Chat_Server.sln` → `Debug|x64` 또는 `Release|x64`. Phase 1+2 종료 후 `NetworkLibrary.sln` 으로 이름 변경.
+**Windows (현재)**: Visual Studio 2026 (v145 toolset). `Chat_Server.sln` → `Debug|x64` 또는 `Release|x64`. Phase 1+2 종료 후 `NetworkLibrary.sln` 으로 이름 변경.
 
 **Linux (Phase 4)**: CMake 도입 예정.
 
@@ -53,7 +53,7 @@ NetworkLibrary/
 ## 코드 스타일
 
 **현재** (Phase 1+2 동안 유지):
-- C++14 추정 (vcxproj에 `/std:c++` 명시 없음, v143 디폴트)
+- C++14 추정 (vcxproj에 `/std:c++` 명시 없음, v145 디폴트)
 - 헝가리안 표기법 (`m_iBufferSize`, `dwSendFlag`, `pSession`)
 - `C` 접두사 클래스명 (`CNet_Server`, `CPacket`)
 - raw pointer + 수동 `new/delete`
