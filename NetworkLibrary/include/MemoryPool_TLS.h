@@ -50,8 +50,10 @@ public:
 			Lock();
 			if (pChunckPool == NULL)
 			{
-
+#pragma warning(push)
+#pragma warning(disable: 4316) // Phase 3 C++17 진입(/Zc:alignedNew) 시 제거
 				pChunckPool = new MemoryPool_TLS_Chunck;
+#pragma warning(pop)
 				atexit(Destroy);
 			}
 			Unlock();
