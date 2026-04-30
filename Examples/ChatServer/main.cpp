@@ -1,11 +1,8 @@
-//#include "CNet_Server.h"
-
 #include <stdio.h>
 #include <conio.h>
 #include <time.h>
 
-//#include "CNet_Server.h"
-#include "Content.h";
+#include "Content.h"
 
 #include "Logger.h"
 #include "Monitoring_Tool.h"
