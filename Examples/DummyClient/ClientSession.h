@@ -9,8 +9,7 @@ enum eSESSION_STATE
 	eSTATE_CONNECTED,       // 연결 완료, 로그인 패킷 송신 대기
 	eSTATE_LOGIN_SENT,      // 로그인 패킷 송신 완료, 응답 대기
 	eSTATE_ACTIVE,          // 로그인 성공, 채팅 송신 가능
-	eSTATE_DISCONNECTED,    // 연결 끊김 (재연결 안 함)
-	eSTATE_FAILED,          // 연결/로그인 실패
+	eSTATE_DISCONNECTED,    // 연결 끊김 — reconnectAt 후 재연결 시도
 };
 
 struct ClientSession
@@ -32,6 +31,8 @@ struct ClientSession
 
 	DWORD lastHeartbeat;    // GetTickCount 기준 마지막 하트비트 송신 시각
 	DWORD lastMessage;      // 마지막 메시지 송신 시각
+	DWORD disconnectAt;     // ACTIVE 진입 시 설정, 도달 시 무작위 disconnect
+	DWORD reconnectAt;      // DISCONNECTED 후 재연결 시도 시각
 
 	int messagesSent;
 	int messagesRecv;
