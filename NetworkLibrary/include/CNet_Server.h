@@ -116,6 +116,10 @@ private:
 	void ReleaseSession(stSESSION* pSession);
 	void initSession(stSESSION* pSession);
 
+	// thread_local 캐시로 _LogTransmit_Map 접근 — find/insert race 회피
+	// 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
+	DWORD* GetThreadTransmitArr(void);
+
 
 private:
 	enum en_NETWORK_PACKET

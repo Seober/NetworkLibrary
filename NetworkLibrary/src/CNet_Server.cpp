@@ -627,45 +627,34 @@ bool CNet_Server::DecodePacket(CPacket* pPacket)
 	return true;
 }
 
+DWORD* CNet_Server::GetThreadTransmitArr(void)
+{
+	// static thread_local: 스레드당 1개 캐시, 호출마다 lock 안 걸림
+	// 다중 CNet_Server 인스턴스 사용 시 한계 있음 (1 서버 가정)
+	static thread_local DWORD* TransmitArr = nullptr;
+	if (TransmitArr != nullptr) return TransmitArr;
+
+	TransmitArr = new DWORD[4]();  // value-init: 0으로 초기화
+	DWORD ThreadID = GetCurrentThreadId();
+
+	AcquireSRWLockExclusive(&srwLogTransmitMap);
+	_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
+	ReleaseSRWLockExclusive(&srwLogTransmitMap);
+
+	return TransmitArr;
+}
+
 void CNet_Server::AddRecvBytes(DWORD dwRecvBytes)
 {
-	DWORD ThreadID = GetCurrentThreadId();
-	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	if (iter_LogTransmit == _LogTransmit_Map.end())
-	{
-		DWORD* TransmitArr = new DWORD[4];
-		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-
-		AcquireSRWLockExclusive(&srwLogTransmitMap);
-		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-		ReleaseSRWLockExclusive(&srwLogTransmitMap);
-
-		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	}
-
-	DWORD NetworkHeader = 40;
+	DWORD* arr = GetThreadTransmitArr();
 	dwRecvBytes += 40 * (dwRecvBytes / 1460 + 1);
-
-	InterlockedExchangeAdd(&iter_LogTransmit->second[1], dwRecvBytes);
+	InterlockedExchangeAdd(&arr[1], dwRecvBytes);
 }
 
 void CNet_Server::AddRecvPacket(void)
 {
-	DWORD ThreadID = GetCurrentThreadId();
-	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	if (iter_LogTransmit == _LogTransmit_Map.end())
-	{
-		DWORD* TransmitArr = new DWORD[4];
-		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-
-		AcquireSRWLockExclusive(&srwLogTransmitMap);
-		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-		ReleaseSRWLockExclusive(&srwLogTransmitMap);
-
-		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	}
-
-	InterlockedIncrement(&iter_LogTransmit->second[0]);
+	DWORD* arr = GetThreadTransmitArr();
+	InterlockedIncrement(&arr[0]);
 }
 
 
@@ -694,22 +683,10 @@ void CNet_Server::AddRecvPacket(void)
 
 void CNet_Server::AddSend(DWORD dwSendPacketCnt, DWORD dwSendBytes)
 {
-	DWORD ThreadID = GetCurrentThreadId();
-	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	if (iter_LogTransmit == _LogTransmit_Map.end())
-	{
-		DWORD* TransmitArr = new DWORD[4];
-		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-
-		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	}
-
-	DWORD NetworkHeader = 40;
+	DWORD* arr = GetThreadTransmitArr();
 	dwSendBytes += 40 * (dwSendBytes / 1460 + 1);
-
-	InterlockedExchangeAdd(&iter_LogTransmit->second[2], dwSendPacketCnt);
-	InterlockedExchangeAdd(&iter_LogTransmit->second[3], dwSendBytes);
+	InterlockedExchangeAdd(&arr[2], dwSendPacketCnt);
+	InterlockedExchangeAdd(&arr[3], dwSendBytes);
 }
 
 
@@ -717,8 +694,11 @@ void CNet_Server::GetTransmit(DWORD* TransmitBuffer)
 {
 	for (int i = 0; i < 4; i++) TransmitBuffer[i] = 0;
 
+	// 다른 스레드의 첫 호출(insert) 중 iteration race 방지
+	AcquireSRWLockShared(&srwLogTransmitMap);
 	for (auto& v : _LogTransmit_Map)
 	{
 		for (int i = 0; i < 4; i++) TransmitBuffer[i] += InterlockedExchange(&v.second[i], 0);
 	}
+	ReleaseSRWLockShared(&srwLogTransmitMap);
 }
