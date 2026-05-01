@@ -41,27 +41,24 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)BaseLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\CNet_Server.h" />
     <ClInclude Include="include\CPacket.h" />
-    <ClInclude Include="include\CrashDump.h" />
     <ClInclude Include="include\IPacketEncoder.h" />
-    <ClInclude Include="include\LockFree_Queue_TLS.h" />
-    <ClInclude Include="include\LockFree_Stack.h" />
-    <ClInclude Include="include\Logger.h" />
-    <ClInclude Include="include\MemoryPool_LF.h" />
-    <ClInclude Include="include\MemoryPool_TLS.h" />
     <ClInclude Include="include\XorPacketEncoder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CNet_Server.cpp" />
     <ClCompile Include="src\CPacket.cpp" />
-    <ClCompile Include="src\CrashDump.cpp" />
-    <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\XorPacketEncoder.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BaseLibrary\BaseLibrary.vcxproj">
+      <Project>{f97d9106-6a40-4f1d-8dbf-40476f9fa473}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

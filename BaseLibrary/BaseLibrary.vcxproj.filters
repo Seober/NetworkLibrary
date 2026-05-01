@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="LockFree">
+      <UniqueIdentifier>{2A2E726A-854F-4744-8A2A-3C17CCCE0778}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MemoryPool">
+      <UniqueIdentifier>{57136087-1D09-4A6D-AB55-8011DC421A12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logging">
+      <UniqueIdentifier>{A7BDD7F6-D568-4FE0-A642-6603885E186A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logging\CrashDump">
+      <UniqueIdentifier>{9F27974C-60CD-4F4D-A4C3-72F5919A296C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\LockFree_Stack.h">
+      <Filter>LockFree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\LockFree_Queue_TLS.h">
+      <Filter>LockFree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MemoryPool_LF.h">
+      <Filter>MemoryPool</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MemoryPool_TLS.h">
+      <Filter>MemoryPool</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Logger.h">
+      <Filter>Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CrashDump.h">
+      <Filter>Logging\CrashDump</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Logger.cpp">
+      <Filter>Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CrashDump.cpp">
+      <Filter>Logging\CrashDump</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
