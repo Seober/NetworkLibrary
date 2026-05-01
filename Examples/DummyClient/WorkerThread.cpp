@@ -121,7 +121,7 @@ static void HandleConnectComplete(ClientSession& s, WorkerContext* ctx, bool wri
 	}
 }
 
-static void SendLoginPacket(ClientSession& s, int globalIdx)
+static void SendLoginPacket(ClientSession& s, WorkerContext* ctx, int globalIdx)
 {
 	CPacket packet;
 	packet.Clear();
@@ -155,7 +155,7 @@ static void SendLoginPacket(ClientSession& s, int globalIdx)
 	s.state = eSTATE_LOGIN_SENT;
 }
 
-static void SendSectorMovePacket(ClientSession& s)
+static void SendSectorMovePacket(ClientSession& s, WorkerContext* ctx)
 {
 	CPacket packet;
 	packet.Clear();
@@ -181,7 +181,7 @@ static void SendSectorMovePacket(ClientSession& s)
 	s.sectorY = sectorY;
 }
 
-static void SendChatPacket(ClientSession& s)
+static void SendChatPacket(ClientSession& s, WorkerContext* ctx)
 {
 	CPacket packet;
 	packet.Clear();
@@ -207,7 +207,7 @@ static void SendChatPacket(ClientSession& s)
 	s.messagesSent++;
 }
 
-static void SendHeartbeatPacket(ClientSession& s)
+static void SendHeartbeatPacket(ClientSession& s, WorkerContext* ctx)
 {
 	CPacket packet;
 	packet.Clear();
@@ -287,7 +287,7 @@ static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx)
 				s.disconnectAt = ComputeDisconnectAt(ctx);
 				InterlockedIncrement(ctx->pActive);
 				// 로그인 성공 즉시 섹터 이동
-				SendSectorMovePacket(s);
+				SendSectorMovePacket(s, ctx);
 			}
 			else
 			{
@@ -480,7 +480,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param)
 			if (s.state == eSTATE_CONNECTED)
 			{
 				int globalIdx = ctx->sessionStartIdx + i;
-				SendLoginPacket(s, globalIdx);
+				SendLoginPacket(s, ctx, globalIdx);
 			}
 			else if (s.state == eSTATE_ACTIVE)
 			{
@@ -493,12 +493,12 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param)
 				{
 					if (now - s.lastMessage >= ctx->messageInterval)
 					{
-						SendChatPacket(s);
+						SendChatPacket(s, ctx);
 						s.lastMessage = now;
 					}
 					if (now - s.lastHeartbeat >= HEARTBEAT_INTERVAL_MS)
 					{
-						SendHeartbeatPacket(s);
+						SendHeartbeatPacket(s, ctx);
 						s.lastHeartbeat = now;
 					}
 				}
