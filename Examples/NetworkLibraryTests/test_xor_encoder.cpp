@@ -167,7 +167,7 @@ TEST_CASE("XorEncoder: mixed types roundtrip", "[encoder][roundtrip]")
     REQUIRE(b == 0xFF);
 }
 
-TEST_CASE("XorEncoder: Encode idempotency — second call is noop", "[encoder][idempotent]")
+TEST_CASE("XorEncoder: Encode idempotency - second call is noop", "[encoder][idempotent]")
 {
     XorPacketEncoder enc;
     CPacket pkt;
