@@ -57,6 +57,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\External\Catch2\catch_amalgamated.cpp" />
     <ClCompile Include="test_sanity.cpp" />
+    <ClCompile Include="test_packet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NetworkLibrary\NetworkLibrary.vcxproj">
