@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include "ClientSession.h"
+#include "IPacketEncoder.h"
 
 struct WorkerContext
 {
@@ -18,6 +19,8 @@ struct WorkerContext
 	DWORD maxLifetimeMs;        // 무작위 disconnect 최대 (ms). minLifetimeMs > 0일 때만 의미
 
 	HANDLE shutdownEvent;       // main이 SetEvent로 종료 신호
+
+	IPacketEncoder* encoder;    // main이 생성·소유. Worker는 포인터만 사용 (stateless 공유 안전)
 
 	// 공유 통계 (Interlocked로만 갱신)
 	volatile LONG* pConnected;

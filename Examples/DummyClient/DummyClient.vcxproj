@@ -56,12 +56,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ClientSession.h" />
-    <ClInclude Include="PacketCodec.h" />
     <ClInclude Include="WorkerThread.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="PacketCodec.cpp" />
     <ClCompile Include="WorkerThread.cpp" />
   </ItemGroup>
   <ItemGroup>

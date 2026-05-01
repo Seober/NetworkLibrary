@@ -75,7 +75,7 @@ bool XorPacketEncoder::Decode(CPacket& packet)
     if (pHeader->Checksum != checksum)
         return false;
 
-    // 성공 — Front를 페이로드 시작 위치로 이동 (PacketCodec 동작과 통일)
+    // 성공 — Front를 페이로드 시작 위치로 이동 (호출자가 페이로드만 직접 read 가능)
     packet.MoveReadPos((int)sizeof(NetHeader));
     return true;
 }

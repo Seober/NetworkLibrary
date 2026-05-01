@@ -3,7 +3,6 @@
 #define FD_SETSIZE 1024
 
 #include "WorkerThread.h"
-#include "PacketCodec.h"
 #include "../ChatServer/Protocol.h"
 #include "CPacket.h"
 
@@ -143,7 +142,7 @@ static void SendLoginPacket(ClientSession& s, int globalIdx)
 	packet.PutData(nickname, 20);
 	packet.PutData(sessionKey, 64);
 
-	PacketCodec::Encode(&packet);
+	ctx->encoder->Encode(packet);
 
 	int totalLen = packet.GetDataSize();
 	int copyLen = totalLen;
@@ -170,7 +169,7 @@ static void SendSectorMovePacket(ClientSession& s)
 	packet << sectorX;
 	packet << sectorY;
 
-	PacketCodec::Encode(&packet);
+	ctx->encoder->Encode(packet);
 
 	int copyLen = packet.GetDataSize();
 	if (s.sendBytes + copyLen > sizeof(s.sendBuf)) return;
@@ -197,7 +196,7 @@ static void SendChatPacket(ClientSession& s)
 	packet << messageLen;
 	packet.PutData(message, len);
 
-	PacketCodec::Encode(&packet);
+	ctx->encoder->Encode(packet);
 
 	int copyLen = packet.GetDataSize();
 	if (s.sendBytes + copyLen > sizeof(s.sendBuf)) return;
@@ -216,7 +215,7 @@ static void SendHeartbeatPacket(ClientSession& s)
 	WORD type = en_PACKET_CS_CHAT_REQ_HEARTBEAT;
 	packet << type;
 
-	PacketCodec::Encode(&packet);
+	ctx->encoder->Encode(packet);
 
 	int copyLen = packet.GetDataSize();
 	if (s.sendBytes + copyLen > sizeof(s.sendBuf)) return;
@@ -230,26 +229,33 @@ static void SendHeartbeatPacket(ClientSession& s)
 static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx)
 {
 	int processed = 0;
-	int headerSize = sizeof(PacketCodec::stHeader_NET);
+	std::size_t headerSize = ctx->encoder->GetHeaderSize();
 
-	while (s.recvBytes - processed >= headerSize)
+	while (s.recvBytes - processed >= (int)headerSize)
 	{
-		PacketCodec::stHeader_NET* pHeader = (PacketCodec::stHeader_NET*)(s.recvBuf + processed);
+		const void* hdr = s.recvBuf + processed;
 
-		if (pHeader->Code != PacketCodec::eHEADER_CODE)
+		if (!ctx->encoder->VerifyHeaderMagic(hdr))
 		{
 			// 잘못된 패킷 — 세션 종료
 			MarkDisconnected(s, ctx);
 			return processed;
 		}
 
-		if (pHeader->Len > sizeof(s.recvBuf) - headerSize)
+		std::size_t payloadLen;
+		if (!ctx->encoder->PeekPayloadLength(hdr, payloadLen))
 		{
 			MarkDisconnected(s, ctx);
 			return processed;
 		}
 
-		int packetSize = headerSize + pHeader->Len;
+		if (payloadLen > sizeof(s.recvBuf) - headerSize)
+		{
+			MarkDisconnected(s, ctx);
+			return processed;
+		}
+
+		int packetSize = (int)(headerSize + payloadLen);
 		if (s.recvBytes - processed < packetSize) break;  // 페이로드 부족
 
 		// 임시 CPacket으로 복호화
@@ -257,7 +263,7 @@ static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx)
 		memcpy(tmpPacket.GetWriteBufferPtr(), s.recvBuf + processed, packetSize);
 		tmpPacket.MoveWritePos(packetSize);
 
-		if (!PacketCodec::Decode(&tmpPacket))
+		if (!ctx->encoder->Decode(tmpPacket))
 		{
 			// checksum 실패 — 세션 종료
 			MarkDisconnected(s, ctx);

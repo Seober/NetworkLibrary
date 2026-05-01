@@ -11,6 +11,7 @@
 
 #include "WorkerThread.h"
 #include "ClientSession.h"
+#include "XorPacketEncoder.h"
 
 #define DEFAULT_IP "127.0.0.1"
 #define DEFAULT_PORT 12001
@@ -122,6 +123,10 @@ int wmain(int argc, WCHAR* argv[])
 	// shutdown event
 	HANDLE shutdownEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
+	// 인코더 — 모든 워커 스레드가 공유. main 스택에서 생성, 워커보다 오래 살아있음 보장.
+	// 디폴트는 ChatServer와 같은 XOR (0x77, 0x32). 다른 알고리즘 사용 시 IPacketEncoder 상속해서 인스턴스만 교체.
+	XorPacketEncoder encoder(0x77, 0x32);
+
 	// 워커 컨텍스트 + 스레드 생성
 	WorkerContext* ctxArr = (WorkerContext*)calloc(threadCount, sizeof(WorkerContext));
 	HANDLE* threadHandles = (HANDLE*)calloc(threadCount, sizeof(HANDLE));
@@ -140,6 +145,7 @@ int wmain(int argc, WCHAR* argv[])
 		ctxArr[t].minLifetimeMs = minLifetime;
 		ctxArr[t].maxLifetimeMs = maxLifetime;
 		ctxArr[t].shutdownEvent = shutdownEvent;
+		ctxArr[t].encoder = &encoder;
 		ctxArr[t].pConnected = &connected;
 		ctxArr[t].pActive = &active;
 		ctxArr[t].pFailed = &failed;
