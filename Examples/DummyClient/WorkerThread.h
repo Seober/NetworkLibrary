@@ -14,6 +14,9 @@ struct WorkerContext
 	SOCKADDR_IN serverAddr;
 	DWORD messageInterval;      // 메시지 송신 간격 (ms)
 
+	DWORD minLifetimeMs;        // 0 = 무작위 disconnect 비활성, 그 외 = 무작위 disconnect 최소 (ms)
+	DWORD maxLifetimeMs;        // 무작위 disconnect 최대 (ms). minLifetimeMs > 0일 때만 의미
+
 	HANDLE shutdownEvent;       // main이 SetEvent로 종료 신호
 
 	// 공유 통계 (Interlocked로만 갱신)

@@ -14,17 +14,14 @@
 #define HEARTBEAT_INTERVAL_MS 30000
 #define SELECT_TIMEOUT_MS 50
 
-// 무작위 disconnect 범위 (5~10초)
-#define MIN_LIFETIME_MS 5000
-#define MAX_LIFETIME_MS 10000
-
 // 재연결 대기 범위 (0.5~2초) — 서버에 burst reconnect 부담 분산
 #define MIN_RECONNECT_DELAY_MS 500
 #define MAX_RECONNECT_DELAY_MS 2000
 
-static DWORD ComputeDisconnectAt(void)
+static DWORD ComputeDisconnectAt(const WorkerContext* ctx)
 {
-	return GetTickCount() + MIN_LIFETIME_MS + (rand() % (MAX_LIFETIME_MS - MIN_LIFETIME_MS));
+	if (ctx->minLifetimeMs == 0) return 0;  // 무작위 disconnect 비활성 — disconnectAt=0 sentinel
+	return GetTickCount() + ctx->minLifetimeMs + (rand() % (ctx->maxLifetimeMs - ctx->minLifetimeMs));
 }
 
 static DWORD ComputeReconnectAt(void)
@@ -281,7 +278,7 @@ static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx)
 			if (status == 1)
 			{
 				s.state = eSTATE_ACTIVE;
-				s.disconnectAt = ComputeDisconnectAt();
+				s.disconnectAt = ComputeDisconnectAt(ctx);
 				InterlockedIncrement(ctx->pActive);
 				// 로그인 성공 즉시 섹터 이동
 				SendSectorMovePacket(s);
@@ -481,8 +478,8 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param)
 			}
 			else if (s.state == eSTATE_ACTIVE)
 			{
-				// 무작위 disconnect 시점 도달 — 끊김
-				if (now >= s.disconnectAt)
+				// 무작위 disconnect 시점 도달 — 끊김 (disconnectAt=0이면 비활성)
+				if (s.disconnectAt != 0 && now >= s.disconnectAt)
 				{
 					MarkDisconnected(s, ctx);
 				}

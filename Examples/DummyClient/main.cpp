@@ -48,6 +48,20 @@ int wmain(int argc, WCHAR* argv[])
 		return 1;
 	}
 
+	DWORD minLifetime = 0, maxLifetime = 0;
+	wprintf(L"Input Disconnect Min Lifetime (ms, 0=disable) : ");
+	wscanf_s(L"%u", &minLifetime);
+	if (minLifetime > 0)
+	{
+		wprintf(L"Input Disconnect Max Lifetime (ms) : ");
+		wscanf_s(L"%u", &maxLifetime);
+		if (maxLifetime <= minLifetime)
+		{
+			wprintf(L"Invalid — Max must be greater than Min\n");
+			return 1;
+		}
+	}
+
 	// 프로세서 수 자동 감지 + 스레드/세션 분배
 	SYSTEM_INFO sysInfo;
 	GetSystemInfo(&sysInfo);
@@ -123,6 +137,8 @@ int wmain(int argc, WCHAR* argv[])
 		ctxArr[t].sessionStartIdx = sessionIdx;
 		ctxArr[t].serverAddr = serverAddr;
 		ctxArr[t].messageInterval = (DWORD)messageInterval;
+		ctxArr[t].minLifetimeMs = minLifetime;
+		ctxArr[t].maxLifetimeMs = maxLifetime;
 		ctxArr[t].shutdownEvent = shutdownEvent;
 		ctxArr[t].pConnected = &connected;
 		ctxArr[t].pActive = &active;
