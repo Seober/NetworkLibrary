@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <windows.h>
 
@@ -129,7 +129,7 @@ MemoryPool_LF<T>::MemoryPool_LF(int initSize)
 	iCnt_UseNode = 0;
 	iCnt_TotalNode = 0;
 
-	for (unsigned int i = 0; i < iMemoryAllocSize; i++) NewNode();
+	for (int i = 0; i < iMemoryAllocSize; i++) NewNode();
 }
 
 template <typename T>

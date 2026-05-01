@@ -1,16 +1,11 @@
-//#include "CNet_Server.h"
-
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <conio.h>
 #include <time.h>
 
-//#include "CNet_Server.h"
-#include "Content.h";
+#include "Content.h"
 
 #include "Logger.h"
 #include "Monitoring_Tool.h"
-
-#include "MonitorClient.h"
 
 
 #define SERVER_IP NULL
@@ -37,19 +32,9 @@ int main(void)
 	if (NagleFlag) NagleFlag = FALSE;
 	else NagleFlag = TRUE;
 
-	BOOL MonitorFlag;
-	wprintf(L"Use Monitor[0:OFF, 1:ON] : ");
-	scanf_s("%d", &MonitorFlag);
-
 	Chat_Server Server(MAX_USER);
 	/*Server.CreateContentThread(true);*/
 	if (!Server.Start(SERVER_IP, SERVER_PORT, ProcessorCnt, 0, NagleFlag, MAX_USER * 2)) return 0;
-
-	MonitorClient MonitorClient(1);
-	if (MonitorFlag)
-	{
-		if (MonitorClient.Connect(L"192.168.10.101", 10101, 2, 0, true) == false) return 0;
-	}
 
 	DWORD dwMainThreadID = GetCurrentThreadId();
 	WCHAR ControlKey;
@@ -88,7 +73,7 @@ int main(void)
 		Server.GetTransmit(TransmitBuffer);
 		Monitor.UpdateAll();
 
-		ProcessUseCPUTotal = Monitor.ProcessTotal();
+		ProcessUseCPUTotal = (int)Monitor.ProcessTotal();
 		ProcessUseMemory = Monitor.ProcessUserAllocMemory() / 1000000;
 
 		SessionCnt = Server.GetSessionCnt_Connected();
@@ -97,32 +82,13 @@ int main(void)
 		UsePacketPool = Server.Log_GetPacketPoolUse();
 		UseJobPool = Server.Log_GetJobPoolUse();
 		
-		ProcessorUseCPUTotal = Monitor.ProcessorTotal();
+		ProcessorUseCPUTotal = (int)Monitor.ProcessorTotal();
 		ProcessorNonPagedMemory = Monitor.NonpagedMemory() / 1000000;
-		ProcessorNetworkRecv = Monitor.NetworkRecvBytes() / 1000;
-		ProcessorNetworkSend = Monitor.NetworkSendBytes() / 1000;
+		ProcessorNetworkRecv = (int)(Monitor.NetworkRecvBytes() / 1000);
+		ProcessorNetworkSend = (int)(Monitor.NetworkSendBytes() / 1000);
 		ProcessorAvailableMemory = Monitor.AvailableMemory();
 
 		time((time_t*)&CurTime);
-		if (MonitorFlag)
-		{
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SERVER_RUN, 1, CurTime);
-
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SERVER_CPU, ProcessUseCPUTotal, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SERVER_MEM, ProcessUseMemory, CurTime);
-
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_SESSION, SessionCnt, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_PLAYER, UserCnt, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_UPDATE_TPS, JobTPS, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_PACKET_POOL, UsePacketPool, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_CHAT_UPDATEMSG_POOL, UseJobPool, CurTime);
-
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_CPU_TOTAL, ProcessorUseCPUTotal, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_NONPAGED_MEMORY, ProcessorNonPagedMemory, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_RECV, ProcessorNetworkRecv, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_SEND, ProcessorNetworkSend, CurTime);
-			MonitorClient.SendLogMessage(dfMONITOR_DATA_TYPE_MONITOR_AVAILABLE_MEMORY, ProcessorAvailableMemory, CurTime);
-		}
 
 		wprintf(L"\n====================================[LoopCnt:%I64u]=====================================\n", LoopCnt++);
 		wprintf(L"SessionCnt:%d, CharacterCnt:%d\n\n", SessionCnt, UserCnt);

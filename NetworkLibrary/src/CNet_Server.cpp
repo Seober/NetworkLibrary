@@ -1,4 +1,4 @@
-#include "CNet_Server.h"
+ï»¿#include "CNet_Server.h"
 
 
 #include "MemoryPool_TLS.h"
@@ -36,7 +36,7 @@ unsigned WINAPI CNet_Server::AcceptThread(LPVOID lpThreadParameter)
 				pLogger->Crash();
 				break;
 			}
-		}// @@@@@ ´Ü¼ø ¸Þ¸ð¸® Á¤¸®·Î º¯°æÇÊ¿ä
+		}// @@@@@ ë‹¨ìˆœ ë©”ëª¨ë¦¬ ì •ë¦¬ë¡œ ë³€ê²½í•„ìš”
 
 		pServer->AddAcceptCnt();
 
@@ -86,26 +86,20 @@ unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter)
 	CNet_Server::stSESSION* targetSession;
 	OVERLAPPED* tmpOverlapped;
 
-	DWORD Err_Code = NULL;
 	while (1)
 	{
-		int retval_GQCS = GetQueuedCompletionStatus(pServer->h_IOCP, &dwTransferred, (PULONG_PTR)&targetSession, &tmpOverlapped, INFINITE);
-		if (retval_GQCS == 0)
-		{
-			Err_Code = GetLastError();
-		}
+		GetQueuedCompletionStatus(pServer->h_IOCP, &dwTransferred, (PULONG_PTR)&targetSession, &tmpOverlapped, INFINITE);
 
 		if (dwTransferred == 0 && targetSession == NULL && tmpOverlapped == NULL)
 		{
 			pLogger->Log(L"Network", Logger::en_LOG_LEVEL::eLEVEL_SYSTEM, L"# GQCS return NULL");
 			pLogger->Crash();
-			// Post¿¡ ÀÇÇÑ ½º·¹µå Á¾·á ÀýÂ÷
-			continue;
+			break;
 		}
 
 		if (dwTransferred != 0)
 		{
-			// Recv ¿Ï·áÅëÁö	
+			// Recv ì™„ë£Œí†µì§€	
 			if (&targetSession->RecvOverlapped == tmpOverlapped)
 			{
 				/*pServer->AddRecv(dwTransferred);*/
@@ -141,7 +135,7 @@ unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter)
 				pServer->RecvPost(targetSession);
 			}
 
-			// Send ¿Ï·áÅëÁö
+			// Send ì™„ë£Œí†µì§€
 			else if (&targetSession->SendOverlapped == tmpOverlapped)
 			{
 				pServer->AddSend(targetSession->dwSendPacketCnt, dwTransferred);
@@ -368,7 +362,7 @@ bool CNet_Server::SendPost(stSESSION* pSession, DWORD Flag)
 		case 10004:
 		case 10022:
 		case 10053:
-		case 10054: // ÇÇ¾îº° ¿¬°á Àç¼³Á¤
+		case 10054: // í”¼ì–´ë³„ ì—°ê²° ìž¬ì„¤ì •
 			return false;
 		default:
 		{
@@ -406,7 +400,7 @@ bool CNet_Server::RecvPost(stSESSION* pSession, DWORD Flag)
 		case 10004:
 		case 10022:
 		case 10053:
-		case 10054: // ÇÇ¾îº° ¿¬°á Àç¼³Á¤
+		case 10054: // í”¼ì–´ë³„ ì—°ê²° ìž¬ì„¤ì •
 			pSession->DecrementSessionRef();
 			return false;
 			break;
@@ -633,89 +627,42 @@ bool CNet_Server::DecodePacket(CPacket* pPacket)
 	return true;
 }
 
+DWORD* CNet_Server::GetThreadTransmitArr(void)
+{
+	// static thread_local: ìŠ¤ë ˆë“œë‹¹ 1ê°œ ìºì‹œ, í˜¸ì¶œë§ˆë‹¤ lock ì•ˆ ê±¸ë¦¼
+	// ë‹¤ì¤‘ CNet_Server ì¸ìŠ¤í„´ìŠ¤ ì‚¬ìš© ì‹œ í•œê³„ ìžˆìŒ (1 ì„œë²„ ê°€ì •)
+	static thread_local DWORD* TransmitArr = nullptr;
+	if (TransmitArr != nullptr) return TransmitArr;
+
+	TransmitArr = new DWORD[4]();  // value-init: 0ìœ¼ë¡œ ì´ˆê¸°í™”
+	DWORD ThreadID = GetCurrentThreadId();
+
+	AcquireSRWLockExclusive(&srwLogTransmitMap);
+	_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
+	ReleaseSRWLockExclusive(&srwLogTransmitMap);
+
+	return TransmitArr;
+}
+
 void CNet_Server::AddRecvBytes(DWORD dwRecvBytes)
 {
-	DWORD ThreadID = GetCurrentThreadId();
-	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	if (iter_LogTransmit == _LogTransmit_Map.end())
-	{
-		DWORD* TransmitArr = new DWORD[4];
-		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-
-		AcquireSRWLockExclusive(&srwLogTransmitMap);
-		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-		ReleaseSRWLockExclusive(&srwLogTransmitMap);
-
-		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	}
-
-	DWORD NetworkHeader = 40;
+	DWORD* arr = GetThreadTransmitArr();
 	dwRecvBytes += 40 * (dwRecvBytes / 1460 + 1);
-
-	InterlockedExchangeAdd(&iter_LogTransmit->second[1], dwRecvBytes);
+	InterlockedExchangeAdd(&arr[1], dwRecvBytes);
 }
 
 void CNet_Server::AddRecvPacket(void)
 {
-	DWORD ThreadID = GetCurrentThreadId();
-	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	if (iter_LogTransmit == _LogTransmit_Map.end())
-	{
-		DWORD* TransmitArr = new DWORD[4];
-		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-
-		AcquireSRWLockExclusive(&srwLogTransmitMap);
-		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-		ReleaseSRWLockExclusive(&srwLogTransmitMap);
-
-		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	}
-
-	InterlockedIncrement(&iter_LogTransmit->second[0]);
+	DWORD* arr = GetThreadTransmitArr();
+	InterlockedIncrement(&arr[0]);
 }
-
-
-//void CNet_Server::AddRecv(DWORD dwRecvBytes)
-//{
-//	DWORD ThreadID = GetCurrentThreadId();
-//	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-//	if (iter_LogTransmit == _LogTransmit_Map.end())
-//	{
-//		DWORD* TransmitArr = new DWORD[4];
-//		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-//
-//		AcquireSRWLockExclusive(&srwLogTransmitMap);
-//		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-//		ReleaseSRWLockExclusive(&srwLogTransmitMap);
-//
-//		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-//	}
-//
-//	DWORD NetworkHeader = 40;
-//	dwRecvBytes += 40 * (dwRecvBytes / 1460 + 1);
-//
-//	InterlockedIncrement(&iter_LogTransmit->second[0]);
-//	InterlockedExchangeAdd(&iter_LogTransmit->second[1], dwRecvBytes);
-//}
 
 void CNet_Server::AddSend(DWORD dwSendPacketCnt, DWORD dwSendBytes)
 {
-	DWORD ThreadID = GetCurrentThreadId();
-	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	if (iter_LogTransmit == _LogTransmit_Map.end())
-	{
-		DWORD* TransmitArr = new DWORD[4];
-		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-
-		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-	}
-
-	DWORD NetworkHeader = 40;
+	DWORD* arr = GetThreadTransmitArr();
 	dwSendBytes += 40 * (dwSendBytes / 1460 + 1);
-
-	InterlockedExchangeAdd(&iter_LogTransmit->second[2], dwSendPacketCnt);
-	InterlockedExchangeAdd(&iter_LogTransmit->second[3], dwSendBytes);
+	InterlockedExchangeAdd(&arr[2], dwSendPacketCnt);
+	InterlockedExchangeAdd(&arr[3], dwSendBytes);
 }
 
 
@@ -723,8 +670,11 @@ void CNet_Server::GetTransmit(DWORD* TransmitBuffer)
 {
 	for (int i = 0; i < 4; i++) TransmitBuffer[i] = 0;
 
+	// ë‹¤ë¥¸ ìŠ¤ë ˆë“œì˜ ì²« í˜¸ì¶œ(insert) ì¤‘ iteration race ë°©ì§€
+	AcquireSRWLockShared(&srwLogTransmitMap);
 	for (auto& v : _LogTransmit_Map)
 	{
 		for (int i = 0; i < 4; i++) TransmitBuffer[i] += InterlockedExchange(&v.second[i], 0);
 	}
+	ReleaseSRWLockShared(&srwLogTransmitMap);
 }

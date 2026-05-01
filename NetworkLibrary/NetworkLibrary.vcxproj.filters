@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{40BBB9AF-BF3D-47B4-9F17-2B33A33FAC66}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{5044A38F-B20C-446E-974C-856BEEDAEB92}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Network">
+      <UniqueIdentifier>{B405223A-50E5-4724-934C-62841B978F4D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Network\LockFree">
+      <UniqueIdentifier>{14AA1413-81A6-4B60-8CEC-4524AC47FE24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Network\MemoryPool">
+      <UniqueIdentifier>{07415E2D-8D82-47AA-A410-C85DAC3D0DE2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logging">
+      <UniqueIdentifier>{308F4ED6-C081-4701-9CFD-9D286BA2B0BD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logging\CrashDump">
+      <UniqueIdentifier>{826CECB5-EF3B-496E-86B8-DD7036C4C972}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\CNet_Server.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CPacket.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="include\LockFree_Queue_TLS.h">
+      <Filter>Network\LockFree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\LockFree_Stack.h">
+      <Filter>Network\LockFree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MemoryPool_LF.h">
+      <Filter>Network\MemoryPool</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MemoryPool_TLS.h">
+      <Filter>Network\MemoryPool</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Logger.h">
+      <Filter>Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CrashDump.h">
+      <Filter>Logging\CrashDump</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CNet_Server.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CPacket.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Logger.cpp">
+      <Filter>Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CrashDump.cpp">
+      <Filter>Logging\CrashDump</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

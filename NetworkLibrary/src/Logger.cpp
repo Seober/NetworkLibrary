@@ -1,4 +1,4 @@
-#include "Logger.h"
+﻿#include "Logger.h"
 #include <strsafe.h>
 
 long Logger::Key_Singleton = 0;
@@ -62,6 +62,8 @@ void Logger::Log(const WCHAR* szType, en_LOG_LEVEL LogLevel, const WCHAR* szStri
 
 
 		//WriteFile
+		// _wfopen_s는 sharing-deny 모드(MSVC 공식)라 한 시점에 한 스레드만 파일을 잡을 수 있음.
+		// do-while 재시도 = OS file lock을 활용한 자연스러운 스핀락 (별도 mutex 불필요, 다중 fwrite 줄 섞임 방지).
 		FILE* pFile = NULL;
 		do { _wfopen_s(&pFile, szFileName, L"ab"); } while (pFile == NULL);
 

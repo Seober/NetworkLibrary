@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "ws2_32")
 #include <winsock2.h>
@@ -20,7 +20,7 @@ public:
 	struct stSESSION
 	{
 		bool SessionUseFlag;
-		alignas(16) LONG64 ReleaseArr[2];
+		alignas(16) volatile LONG64 ReleaseArr[2];
 		unsigned __int64 SessionID;
 
 		char LastAction;
@@ -31,7 +31,7 @@ public:
 		OVERLAPPED SendOverlapped;
 		OVERLAPPED RecvOverlapped;
 
-		DWORD dwSendFlag;
+		volatile DWORD dwSendFlag;
 		DWORD dwSendPacketCnt;
 
 		LockFree_Queue_TLS<CPacket*> SendQ;
@@ -39,7 +39,7 @@ public:
 
 		CPacket* SendBuffer[1000];
 
-		inline int IncrementSessionRef() { return InterlockedIncrement64(&ReleaseArr[1]); }
+		inline LONG64 IncrementSessionRef() { return InterlockedIncrement64(&ReleaseArr[1]); }
 		inline LONG64 DecrementSessionRef() { return InterlockedDecrement64(&ReleaseArr[1]); }
 	};
 
@@ -115,6 +115,10 @@ private:
 
 	void ReleaseSession(stSESSION* pSession);
 	void initSession(stSESSION* pSession);
+
+	// thread_local 캐시로 _LogTransmit_Map 접근 — find/insert race 회피
+	// 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
+	DWORD* GetThreadTransmitArr(void);
 
 
 private:

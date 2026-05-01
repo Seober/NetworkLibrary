@@ -1,0 +1,30 @@
+﻿#pragma once
+#include <winsock2.h>
+#include <windows.h>
+#include "ClientSession.h"
+
+struct WorkerContext
+{
+	int threadId;
+
+	ClientSession* sessions;    // 자기 그룹 세션 배열 (포인터, 소유 아님)
+	int sessionCount;
+	int sessionStartIdx;        // 전역 인덱스 (AccountNo 생성용)
+
+	SOCKADDR_IN serverAddr;
+	DWORD messageInterval;      // 메시지 송신 간격 (ms)
+
+	HANDLE shutdownEvent;       // main이 SetEvent로 종료 신호
+
+	// 공유 통계 (Interlocked로만 갱신)
+	volatile LONG* pConnected;
+	volatile LONG* pActive;
+	volatile LONG* pFailed;
+	volatile LONG* pDisconnected;
+	volatile LONG* pTPS_Sent;
+	volatile LONG* pTPS_Recv;
+	volatile LONG64* pTotalSent;
+	volatile LONG64* pTotalRecv;
+};
+
+unsigned __stdcall WorkerThreadFunc(LPVOID param);

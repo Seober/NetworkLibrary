@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "LockFree_Stack.h"
 #include "MemoryPool_LF.h"
@@ -50,8 +50,10 @@ public:
 			Lock();
 			if (pChunckPool == NULL)
 			{
-
+#pragma warning(push)
+#pragma warning(disable: 4316) // Phase 3 C++17 진입(/Zc:alignedNew) 시 제거
 				pChunckPool = new MemoryPool_TLS_Chunck;
+#pragma warning(pop)
 				atexit(Destroy);
 			}
 			Unlock();
@@ -134,6 +136,17 @@ public:
 		_iChunckSize = ChunckPool->GetChunckSize();
 	}
 
+	~MemoryPool_TLS_Node()
+	{
+		while (_Head != NULL)
+		{
+			stNode* pNext = _Head->pNext;
+			delete _Head;
+			_Head = pNext;
+		}
+		_iFreeNodeCnt = 0;
+	}
+
 	void SetTLS(void)
 	{
 		TlsSetValue(ChunckPool->GetTLSIndex(), this);
@@ -193,8 +206,8 @@ private:
 private:
 	MemoryPool_TLS_Chunck<T>* ChunckPool;
 
-	stNode* volatile _Head;
+	stNode* _Head;
 
-	volatile int _iFreeNodeCnt;
+	int _iFreeNodeCnt;
 	int _iChunckSize;
 };
