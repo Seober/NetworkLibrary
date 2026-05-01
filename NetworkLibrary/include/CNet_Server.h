@@ -11,6 +11,7 @@
 
 #include "CPacket.h"
 #include "LockFree_Queue_TLS.h"
+#include "IPacketEncoder.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +47,7 @@ public:
 	static unsigned WINAPI AcceptThread(LPVOID lpThreadParameter);
 	static unsigned WINAPI WorkerThread(LPVOID lpThreadParameter);
 
-	CNet_Server();
+	CNet_Server(IPacketEncoder* encoder = nullptr);
 	~CNet_Server();
 
 	bool Start(const WCHAR* ServerIP, u_short ServerPort, u_short WorkerThreadCnt_Total, u_short WorkerThreadCnt_Run, BOOL Nagle, u_short ConnectSession_Max);
@@ -107,12 +108,6 @@ public:
 	DWORD GetAcceptTPS(void) { return InterlockedExchange(&_AcceptTPS, 0); }
 
 private:
-	void SetPacketHeader(CPacket* pPacket);
-	void EncodePacket(CPacket* pPacket);
-
-	bool DecodePacket(CPacket* pPacket);
-
-
 	void ReleaseSession(stSESSION* pSession);
 	void initSession(stSESSION* pSession);
 
@@ -120,23 +115,6 @@ private:
 	// 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
 	DWORD* GetThreadTransmitArr(void);
 
-
-private:
-	enum en_NETWORK_PACKET
-	{
-		eHEADER_CODE = 0x77,
-		eHEADER_KEY = 0x32
-	};
-
-#pragma pack(push, 1)
-	struct stHeader_NET
-	{
-		BYTE Code;
-		WORD Len;
-		BYTE RKey;
-		BYTE Checksum;
-	};
-#pragma pack(pop)
 
 private:
 	HANDLE h_IOCP;
@@ -163,4 +141,7 @@ private:
 
 	SRWLOCK srwLogTransmitMap;
 	std::unordered_map<DWORD, DWORD*> _LogTransmit_Map; // Value 0 : RecvTPS, Value 1 : RecvBytes, Value 2 : SendTPS, Value 3 : SendBytes
+
+	IPacketEncoder* m_encoder;
+	bool m_ownsEncoder;
 };

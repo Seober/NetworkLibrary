@@ -4,6 +4,13 @@
 #include "MemoryPool_TLS.h"
 #include "LockFree_Stack.h"
 #include "Logger.h"
+#include "XorPacketEncoder.h"
+
+namespace
+{
+	constexpr BYTE kDefaultHeaderCode = 0x77;
+	constexpr BYTE kDefaultEncryptKey = 0x32;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -178,8 +185,15 @@ unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CNet_Server::CNet_Server()
+CNet_Server::CNet_Server(IPacketEncoder* encoder)
+	: m_encoder(encoder), m_ownsEncoder(false)
 {
+	if (m_encoder == nullptr)
+	{
+		m_encoder = new XorPacketEncoder(kDefaultHeaderCode, kDefaultEncryptKey);
+		m_ownsEncoder = true;
+	}
+
 	h_IOCP = NULL;
 	ListenSocket = INVALID_SOCKET;
 
@@ -216,6 +230,12 @@ CNet_Server::~CNet_Server()
 	closesocket(ListenSocket);
 
 	WSACleanup();
+
+	if (m_ownsEncoder)
+	{
+		delete m_encoder;
+		m_encoder = nullptr;
+	}
 }
 
 bool CNet_Server::Start(const WCHAR* ServerIP, u_short ServerPort, u_short WorkerThreadCnt_Total, u_short WorkerThreadCnt_Run, BOOL Nagle, u_short ConnectSession_Max)
@@ -297,8 +317,8 @@ void CNet_Server::SendPacket(unsigned __int64 SessionID, CPacket* pPacket)
 	if (pSession->ReleaseArr[0] == FALSE && pSession->SessionID == SessionID)
 	{
 		pPacket->IncrementRef();
-		
-		EncodePacket(pPacket);
+
+		m_encoder->Encode(*pPacket);
 		pSession->SendQ.Enqueue(pPacket);
 
 		
@@ -522,16 +542,25 @@ void CNet_Server::FreePacket(CPacket* pPacket)
 
 bool CNet_Server::CheckPacketMessageComplete(unsigned __int64 SessionID, CPacket* pRecvQ)
 {
+	std::size_t headerSize = m_encoder->GetHeaderSize();
 	DWORD PacketUseSize = pRecvQ->GetDataSize();
-	if (PacketUseSize <= sizeof(stHeader_NET)) return false; // Header Check
+	if (PacketUseSize <= headerSize) return false;
 
-	stHeader_NET* pHeader = (stHeader_NET*)pRecvQ->GetReadBufferPtr();
-	if (pHeader->Code != eHEADER_CODE || pHeader->Len > 4096) /*ERR_MAKE;*/
+	const void* headerBytes = pRecvQ->GetReadBufferPtr();
+	if (!m_encoder->VerifyHeaderMagic(headerBytes))
 	{
 		KillSession(SessionID);
 		return false;
 	}
-	if (PacketUseSize < sizeof(stHeader_NET) + pHeader->Len) return false; // Payload Check
+
+	std::size_t payloadLen;
+	if (!m_encoder->PeekPayloadLength(headerBytes, payloadLen))
+	{
+		KillSession(SessionID);
+		return false;
+	}
+
+	if (PacketUseSize < headerSize + payloadLen) return false;
 
 	return true;
 }
@@ -539,90 +568,21 @@ bool CNet_Server::CheckPacketMessageComplete(unsigned __int64 SessionID, CPacket
 
 bool CNet_Server::GetPacketMessage(CPacket* pPacket, CPacket* pRecvQ)
 {
-	if (!DecodePacket(pRecvQ)) return false;
+	// Decode가 Front를 advance시키기 전에 페이로드 길이 미리 추출
+	std::size_t payloadLen;
+	if (!m_encoder->PeekPayloadLength(pRecvQ->GetReadBufferPtr(), payloadLen))
+		return false;
 
-	stHeader_NET* pHeader = (stHeader_NET*)pRecvQ->GetReadBufferPtr();
-	pRecvQ->MoveReadPos(sizeof(stHeader_NET));
+	if (!m_encoder->Decode(*pRecvQ)) return false;
 
-	int retval_GetData = pRecvQ->GetData(pPacket->GetWriteBufferPtr(), pHeader->Len);
-	if (retval_GetData != pHeader->Len)
+	int retval_GetData = pRecvQ->GetData(pPacket->GetWriteBufferPtr(), (int)payloadLen);
+	if (retval_GetData != (int)payloadLen)
 	{
 		Logger* pLogger = Logger::GetInstance();
-		pLogger->Log(L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_ERROR, L"# CPacket GetData Func Err # EnqueueSize:%d, Return:%d", pHeader->Len, retval_GetData);
+		pLogger->Log(L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_ERROR, L"# CPacket GetData Func Err # EnqueueSize:%d, Return:%d", (int)payloadLen, retval_GetData);
 		pLogger->Crash();
 	}
-	pPacket->MoveWritePos(pHeader->Len);
-
-	return true;
-}
-
-void CNet_Server::SetPacketHeader(CPacket* pPacket)
-{
-	char* pFront = pPacket->GetReadBufferPtr();
-	WORD PacketDataSize = pPacket->GetDataSize();
-	BYTE Checksum = 0;
-	WORD HeaderSize = sizeof(stHeader_NET);
-	pPacket->MoveReadPos(-HeaderSize);
-
-	stHeader_NET* pNetHeader = (stHeader_NET*)pPacket->GetReadBufferPtr();
-	pNetHeader->Code = eHEADER_CODE;
-	pNetHeader->Len = PacketDataSize;
-	pNetHeader->RKey = rand() % 256;
-
-	for (int i = 0; i < PacketDataSize; i++, pFront++) Checksum += *pFront;
-	pNetHeader->Checksum = Checksum;
-}
-
-void CNet_Server::EncodePacket(CPacket* pPacket)
-{
-	if (pPacket->CheckFlag_Encode()) return;
-	pPacket->LockPacket();
-	if (pPacket->CheckFlag_Encode() == false)
-	{
-		SetPacketHeader(pPacket);
-		stHeader_NET* pNetHeader = (stHeader_NET*)pPacket->GetReadBufferPtr();
-		BYTE RK = pNetHeader->RKey;
-		BYTE P;
-		char* pFront = (char*)pNetHeader + sizeof(stHeader_NET) - sizeof(BYTE);
-
-		P = *pFront ^ (RK + 1);
-		*pFront = P ^ (eHEADER_KEY + 1);
-		pFront++;
-
-		for (int i = 2; i < pNetHeader->Len + 2; i++, pFront++)
-		{
-			P = *pFront ^ (P + RK + i);
-			*pFront = P ^ (*(pFront - 1) + eHEADER_KEY + i);
-		}
-	}
-
-	pPacket->UnlockPacket();
-}
-
-
-bool CNet_Server::DecodePacket(CPacket* pPacket)
-{
-	stHeader_NET* pNetHeader = (stHeader_NET*)pPacket->GetReadBufferPtr();
-	BYTE RK = pNetHeader->RKey;
-	BYTE Checksum = 0;
-	unsigned char* pRear = (unsigned char*)pNetHeader + sizeof(stHeader_NET) - sizeof(BYTE) + pNetHeader->Len;
-	unsigned char* ptmp = pRear;
-
-	for (int i = pNetHeader->Len + 1; i > 1; i--, ptmp--) *ptmp = *ptmp ^ (*(ptmp - 1) + eHEADER_KEY + i);
-	*ptmp = *ptmp ^ (eHEADER_KEY + 1);
-
-	ptmp = pRear;
-	for (int i = pNetHeader->Len + 1; i > 1; i--, ptmp--)
-	{
-		*ptmp = *ptmp ^ (*(ptmp - 1) + RK + i);
-		Checksum += *ptmp;
-	}
-	*ptmp = *ptmp ^ (RK + 1);
-
-	if (pNetHeader->Checksum != Checksum)
-	{
-		return false;
-	}
+	pPacket->MoveWritePos((int)payloadLen);
 
 	return true;
 }
