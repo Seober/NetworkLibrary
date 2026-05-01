@@ -48,17 +48,20 @@
     <ClInclude Include="include\CNet_Server.h" />
     <ClInclude Include="include\CPacket.h" />
     <ClInclude Include="include\CrashDump.h" />
+    <ClInclude Include="include\IPacketEncoder.h" />
     <ClInclude Include="include\LockFree_Queue_TLS.h" />
     <ClInclude Include="include\LockFree_Stack.h" />
     <ClInclude Include="include\Logger.h" />
     <ClInclude Include="include\MemoryPool_LF.h" />
     <ClInclude Include="include\MemoryPool_TLS.h" />
+    <ClInclude Include="include\XorPacketEncoder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CNet_Server.cpp" />
     <ClCompile Include="src\CPacket.cpp" />
     <ClCompile Include="src\CrashDump.cpp" />
     <ClCompile Include="src\Logger.cpp" />
+    <ClCompile Include="src\XorPacketEncoder.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

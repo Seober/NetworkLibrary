@@ -24,6 +24,9 @@
     <Filter Include="Logging\CrashDump">
       <UniqueIdentifier>{826CECB5-EF3B-496E-86B8-DD7036C4C972}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Network\Encoder">
+      <UniqueIdentifier>{A2D338BC-63F9-4470-A808-C819B3C2EF6A}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\CNet_Server.h">
@@ -31,6 +34,12 @@
     </ClInclude>
     <ClInclude Include="include\CPacket.h">
       <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IPacketEncoder.h">
+      <Filter>Network\Encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="include\XorPacketEncoder.h">
+      <Filter>Network\Encoder</Filter>
     </ClInclude>
     <ClInclude Include="include\LockFree_Queue_TLS.h">
       <Filter>Network\LockFree</Filter>
@@ -63,6 +72,9 @@
     </ClCompile>
     <ClCompile Include="src\CrashDump.cpp">
       <Filter>Logging\CrashDump</Filter>
+    </ClCompile>
+    <ClCompile Include="src\XorPacketEncoder.cpp">
+      <Filter>Network\Encoder</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
