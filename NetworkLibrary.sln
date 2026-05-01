@@ -15,6 +15,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyClient", "Examples\Dum
 		{8534C7AB-041E-424E-8410-67FD6C171987} = {8534C7AB-041E-424E-8410-67FD6C171987}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NetworkLibraryTests", "Examples\NetworkLibraryTests\NetworkLibraryTests.vcxproj", "{6CA342FD-6AB5-46BB-942E-3423A9E0B3A3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8534C7AB-041E-424E-8410-67FD6C171987} = {8534C7AB-041E-424E-8410-67FD6C171987}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -26,6 +31,8 @@ Global
 		{567E8A0C-CFF8-41EC-BCC4-C9C0734D3C27}.Release|x64.Build.0 = Release|x64
 		{7A9B3D5C-2F8E-4A1B-9C6D-5E8F2A4B7C9D}.Release|x64.ActiveCfg = Release|x64
 		{7A9B3D5C-2F8E-4A1B-9C6D-5E8F2A4B7C9D}.Release|x64.Build.0 = Release|x64
+		{6CA342FD-6AB5-46BB-942E-3423A9E0B3A3}.Release|x64.ActiveCfg = Release|x64
+		{6CA342FD-6AB5-46BB-942E-3423A9E0B3A3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
