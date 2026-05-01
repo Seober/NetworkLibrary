@@ -657,30 +657,6 @@ void CNet_Server::AddRecvPacket(void)
 	InterlockedIncrement(&arr[0]);
 }
 
-
-//void CNet_Server::AddRecv(DWORD dwRecvBytes)
-//{
-//	DWORD ThreadID = GetCurrentThreadId();
-//	auto iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-//	if (iter_LogTransmit == _LogTransmit_Map.end())
-//	{
-//		DWORD* TransmitArr = new DWORD[4];
-//		TransmitArr[0] = 0; TransmitArr[1] = 0; TransmitArr[2] = 0; TransmitArr[3] = 0;
-//
-//		AcquireSRWLockExclusive(&srwLogTransmitMap);
-//		_LogTransmit_Map.insert(std::make_pair(ThreadID, TransmitArr));
-//		ReleaseSRWLockExclusive(&srwLogTransmitMap);
-//
-//		iter_LogTransmit = _LogTransmit_Map.find(ThreadID);
-//	}
-//
-//	DWORD NetworkHeader = 40;
-//	dwRecvBytes += 40 * (dwRecvBytes / 1460 + 1);
-//
-//	InterlockedIncrement(&iter_LogTransmit->second[0]);
-//	InterlockedExchangeAdd(&iter_LogTransmit->second[1], dwRecvBytes);
-//}
-
 void CNet_Server::AddSend(DWORD dwSendPacketCnt, DWORD dwSendBytes)
 {
 	DWORD* arr = GetThreadTransmitArr();
