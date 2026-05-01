@@ -8,8 +8,8 @@ IOCP 기반 C++ 네트워크 라이브러리. 2023년에 채팅서버와 함께 
 
 | 단계 | 내용 | 상태 |
 |---|---|---|
-| Phase 0 | 워크스페이스 준비 (브랜치, CLAUDE.md) | 진행 중 |
-| Phase 1+2 | 라이브러리 분리 + 결함 검토 병행 | 대기 |
+| Phase 0 | 워크스페이스 준비 (브랜치, CLAUDE.md) | 완료 |
+| Phase 1+2 | 라이브러리 분리 + 결함 검토 병행 | 완료 (2026-05-01) |
 | Phase 3 | 리팩토링 + BaseLibrary 분리 + 모던 C++ 컨버팅 | 예정 |
 | Phase 4 | Linux 포팅 (CMake, epoll, 플랫폼 추상화) | 예정 |
 
@@ -17,14 +17,6 @@ IOCP 기반 C++ 네트워크 라이브러리. 2023년에 채팅서버와 함께 
 
 ## 디렉토리 구조
 
-**현재** (Phase 0):
-```
-NetworkLibrary/
-├─ Chat_Server.sln
-└─ Chat_Server/         ← 라이브러리 + 채팅서버 코드 혼재
-```
-
-**Phase 1+2 종료 후 목표**:
 ```
 NetworkLibrary/
 ├─ NetworkLibrary.sln
@@ -33,15 +25,17 @@ NetworkLibrary/
 │  ├─ include/
 │  └─ src/
 └─ Examples/
-   └─ ChatServer/       ← 라이브러리 사용 예제 겸 회귀 테스트
-      └─ ChatServer.vcxproj
+   ├─ ChatServer/       ← 라이브러리 사용 예제 겸 회귀 테스트
+   │  └─ ChatServer.vcxproj
+   └─ DummyClient/      ← 부하·안정성 테스트용 (select 모델, N개 동시접속)
+      └─ DummyClient.vcxproj
 ```
 
 (Phase 3에서 `LockFree_*`, `MemoryPool_*`, `Logger`, `CrashDump`는 별도 BaseLibrary로 재분할 예정)
 
 ## 빌드
 
-**Windows (현재)**: Visual Studio 2026 (v145 toolset). `Chat_Server.sln` → `Debug|x64` 또는 `Release|x64`. Phase 1+2 종료 후 `NetworkLibrary.sln` 으로 이름 변경.
+**Windows (현재)**: Visual Studio 2026 (v145 toolset). `NetworkLibrary.sln` → `Debug|x64` 또는 `Release|x64`. 솔루션은 `NetworkLibrary`(.lib), `ChatServer`(.exe), `DummyClient`(.exe) 3개 프로젝트 포함.
 
 **Linux (Phase 4)**: CMake 도입 예정.
 
