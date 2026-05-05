@@ -1,0 +1,7 @@
+# git blame이 무시할 commit hash 목록
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs` 설정 시 자동 적용
+# GitHub blame UI는 별도 설정 없이 자동 인식 (2022.03+)
+
+# Phase 3c-0 (2026-05-05) — clang-format 일괄 적용
+# 28개 소스파일에 Google C++ Style 기반 G3 옵션 적용. 의미 변경 0, 포맷팅만.
+6ee2da7b54957bc0c6bbf05a97136e697b5441e1
