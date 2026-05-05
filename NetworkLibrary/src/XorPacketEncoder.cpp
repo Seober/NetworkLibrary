@@ -2,18 +2,15 @@
 #include <cstdlib>  // rand
 
 XorPacketEncoder::XorPacketEncoder(BYTE headerCode, BYTE encryptKey, WORD maxPayloadLen)
-    : m_headerCode(headerCode), m_encryptKey(encryptKey), m_maxPayloadLen(maxPayloadLen)
-{
-}
+    : m_headerCode(headerCode), m_encryptKey(encryptKey), m_maxPayloadLen(maxPayloadLen) {}
 
-void XorPacketEncoder::Encode(CPacket& packet)
-{
+void XorPacketEncoder::Encode(CPacket& packet) {
     // idempotency: 이미 Encode된 packet은 다시 처리 안 함 (재전송 시나리오 보호)
-    if (packet.CheckFlag_Encode()) return;
+    if (packet.CheckFlag_Encode())
+        return;
 
     packet.LockPacket();
-    if (packet.CheckFlag_Encode() == false)
-    {
+    if (packet.CheckFlag_Encode() == false) {
         // 헤더 작성 — 페이로드 위치 미리 잡고, Front를 헤더 공간으로 후진
         char* pPayload = packet.GetReadBufferPtr();
         WORD payloadSize = (WORD)packet.GetDataSize();
@@ -40,8 +37,7 @@ void XorPacketEncoder::Encode(CPacket& packet)
         p++;
 
         // 페이로드 byte들
-        for (int i = 2; i < payloadSize + 2; i++, p++)
-        {
+        for (int i = 2; i < payloadSize + 2; i++, p++) {
             P = *p ^ (P + RK + i);
             *p = P ^ (*(p - 1) + m_encryptKey + i);
         }
@@ -49,13 +45,13 @@ void XorPacketEncoder::Encode(CPacket& packet)
     packet.UnlockPacket();
 }
 
-bool XorPacketEncoder::Decode(CPacket& packet)
-{
+bool XorPacketEncoder::Decode(CPacket& packet) {
     NetHeader* pHeader = (NetHeader*)packet.GetReadBufferPtr();
     BYTE RK = pHeader->RKey;
     BYTE checksum = 0;
 
-    unsigned char* pRear = (unsigned char*)pHeader + sizeof(NetHeader) - sizeof(BYTE) + pHeader->Len;
+    unsigned char* pRear =
+        (unsigned char*)pHeader + sizeof(NetHeader) - sizeof(BYTE) + pHeader->Len;
     unsigned char* pTmp = pRear;
 
     // 첫 루프 — encryptKey XOR 풀기 (역순)
@@ -65,8 +61,7 @@ bool XorPacketEncoder::Decode(CPacket& packet)
 
     // 둘째 루프 — RKey XOR 풀기 + checksum 계산 (역순)
     pTmp = pRear;
-    for (int i = pHeader->Len + 1; i > 1; i--, pTmp--)
-    {
+    for (int i = pHeader->Len + 1; i > 1; i--, pTmp--) {
         *pTmp = *pTmp ^ (*(pTmp - 1) + RK + i);
         checksum += *pTmp;
     }
@@ -80,19 +75,17 @@ bool XorPacketEncoder::Decode(CPacket& packet)
     return true;
 }
 
-std::size_t XorPacketEncoder::GetHeaderSize() const
-{
+std::size_t XorPacketEncoder::GetHeaderSize() const {
     return sizeof(NetHeader);
 }
 
-bool XorPacketEncoder::VerifyHeaderMagic(const void* headerBytes) const
-{
+bool XorPacketEncoder::VerifyHeaderMagic(const void* headerBytes) const {
     const NetHeader* pHeader = (const NetHeader*)headerBytes;
     return pHeader->Code == m_headerCode;
 }
 
-bool XorPacketEncoder::PeekPayloadLength(const void* headerBytes, std::size_t& outPayloadLen) const
-{
+bool XorPacketEncoder::PeekPayloadLength(const void* headerBytes,
+                                         std::size_t& outPayloadLen) const {
     const NetHeader* pHeader = (const NetHeader*)headerBytes;
     if (m_maxPayloadLen != 0 && pHeader->Len > m_maxPayloadLen)
         return false;

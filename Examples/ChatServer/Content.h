@@ -13,7 +13,7 @@
 #define dfJOBTYPE_LEAVE 2
 #define dfJOBTYPE_HEARTBEAT 3
 
-	
+
 //////////////////////////////////////////////////
 //	해야할거
 //	1. 빌드시키기 (제가 이것저것 지우는 바람에 빌드 바로 안될거에요, 지운건 말도안되는것만 지웠고, 간단거만 지웠어. 그리고 최소한 함수 구현 안지웠음)
@@ -34,93 +34,94 @@
 //
 //////////////////////////////////////////////////
 
-class Chat_Server : public CNet_Server
-{
+class Chat_Server : public CNet_Server {
 public:
-	struct stJob
-	{
-		WORD JobType;
-		unsigned __int64 SessionID;
-		CPacket* pPacket;
-	};
+    struct stJob {
+        WORD JobType;
+        unsigned __int64 SessionID;
+        CPacket* pPacket;
+    };
 
-	struct stCharacter
-	{
-		unsigned __int64 SessionID;
-		INT64 AccountNo;
-		short SectorX;
-		short SectorY;
-		DWORD dwLastRecvTime;
+    struct stCharacter {
+        unsigned __int64 SessionID;
+        INT64 AccountNo;
+        short SectorX;
+        short SectorY;
+        DWORD dwLastRecvTime;
 
-		WCHAR ID[20];
-		WCHAR Nickname[20];
-	};
+        WCHAR ID[20];
+        WCHAR Nickname[20];
+    };
 
 public:
-	Chat_Server(int MaxUser = 5000, bool HeartBeatFlag = false);
-	~Chat_Server() {}
+    Chat_Server(int MaxUser = 5000, bool HeartBeatFlag = false);
+    ~Chat_Server() {}
 
 
-
-	bool OnConnectionRequest();
-	void OnClientJoin(unsigned __int64 SessionID);
-	void OnClientLeave(unsigned __int64 SessionID);
-	void OnRecv(unsigned __int64 SessionID, CPacket* pPacket);
-
+    bool OnConnectionRequest();
+    void OnClientJoin(unsigned __int64 SessionID);
+    void OnClientLeave(unsigned __int64 SessionID);
+    void OnRecv(unsigned __int64 SessionID, CPacket* pPacket);
 
 
-	void MessageControl(unsigned __int64 SessionID, CPacket* pMessagePacket);
-	stCharacter* FindCharacter(unsigned __int64 SessionID);
-	stCharacter* CreateCharacter(unsigned __int64 SessionID);
-	void LeaveCharacter(unsigned __int64 SessionID); // 캐릭터에 대한 형태로 이름 바꾸기
-	void SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket);
-	void CheckHeartBeat(void);
-	
+    void MessageControl(unsigned __int64 SessionID, CPacket* pMessagePacket);
+    stCharacter* FindCharacter(unsigned __int64 SessionID);
+    stCharacter* CreateCharacter(unsigned __int64 SessionID);
+    void LeaveCharacter(unsigned __int64 SessionID);  // 캐릭터에 대한 형태로 이름 바꾸기
+    void SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket);
+    void CheckHeartBeat(void);
+
 
 public:
-	//LOG
-	int GetCharacterSize(void) { return (int)CharacterMap.size(); }
-	int RemainJob(void) { return JobQueue.GetUseSize(); }
-	int GetThreadRunningTime(void) { return InterlockedExchange(&UpdateThreadSleepTime, 0); }
-	int GetThreadRunningTPS(void) { return InterlockedExchange(&UpdateThreadRunningTPS, 0); }
-	int GetJobTPS(void) { return InterlockedExchange(&_JobTPS, 0); }
-	int Log_JobQueue_StackSize(void) { return JobQueue.GetStackSize(); }
-	int Log_JobQueue_TotalPool(void) { return JobQueue.GetPool_TotalSize(); }
-	int getGetPool_UseSize(void) { return JobQueue.GetPool_UseSize(); }
-	int Log_JobQueue_FreePool(void) { return JobQueue.GetPool_FreeSize(); }
-	int Log_GetCharacterPool_Total(void) { return CharacterPool.GetTotalMemCnt(); }
-	int Log_GetCharacterPool_Use(void) { return CharacterPool.GetUseMemCnt(); }
-	int Log_GetCharacterPool_Free(void) { return CharacterPool.GetFreeMemCnt(); }
+    //LOG
+    int GetCharacterSize(void) { return (int)CharacterMap.size(); }
+    int RemainJob(void) { return JobQueue.GetUseSize(); }
+    int GetThreadRunningTime(void) { return InterlockedExchange(&UpdateThreadSleepTime, 0); }
+    int GetThreadRunningTPS(void) { return InterlockedExchange(&UpdateThreadRunningTPS, 0); }
+    int GetJobTPS(void) { return InterlockedExchange(&_JobTPS, 0); }
+    int Log_JobQueue_StackSize(void) { return JobQueue.GetStackSize(); }
+    int Log_JobQueue_TotalPool(void) { return JobQueue.GetPool_TotalSize(); }
+    int getGetPool_UseSize(void) { return JobQueue.GetPool_UseSize(); }
+    int Log_JobQueue_FreePool(void) { return JobQueue.GetPool_FreeSize(); }
+    int Log_GetCharacterPool_Total(void) { return CharacterPool.GetTotalMemCnt(); }
+    int Log_GetCharacterPool_Use(void) { return CharacterPool.GetUseMemCnt(); }
+    int Log_GetCharacterPool_Free(void) { return CharacterPool.GetFreeMemCnt(); }
 
-	int Log_GetJobPoolTotal(void) { return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTotalMemCnt(); }
-	int Log_GetJobPoolUse(void) { return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetUseMemCnt(); }
-	int Log_GetJobPoolFree(void) { return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetFreeMemCnt(); }
+    int Log_GetJobPoolTotal(void) {
+        return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTotalMemCnt();
+    }
+    int Log_GetJobPoolUse(void) {
+        return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetUseMemCnt();
+    }
+    int Log_GetJobPoolFree(void) {
+        return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetFreeMemCnt();
+    }
 
 private:
-	static unsigned WINAPI UpdateThread_Chat_Field1(LPVOID lpThreadParameter);
-	static unsigned WINAPI TimerThread_Chat_5000(LPVOID lpThreadParameter);
+    static unsigned WINAPI UpdateThread_Chat_Field1(LPVOID lpThreadParameter);
+    static unsigned WINAPI TimerThread_Chat_5000(LPVOID lpThreadParameter);
 
-	inline stJob* AllocJob(int JobType, unsigned __int64 SessionID, CPacket* pPacket);
-	inline void FreeJob(stJob* pJob);
+    inline stJob* AllocJob(int JobType, unsigned __int64 SessionID, CPacket* pPacket);
+    inline void FreeJob(stJob* pJob);
 
 private:
-	HANDLE hContentThread;
-	HANDLE hTimerThread5000;
-	HANDLE hJobEvent;
+    HANDLE hContentThread;
+    HANDLE hTimerThread5000;
+    HANDLE hJobEvent;
 
-	unsigned int _MaxUser;
-	DWORD _Running_CurTime;
+    unsigned int _MaxUser;
+    DWORD _Running_CurTime;
 
-	LockFree_Queue_TLS<stJob*> JobQueue;
+    LockFree_Queue_TLS<stJob*> JobQueue;
 
-	MemoryPool_LF<stCharacter> CharacterPool;
-	std::map<unsigned __int64, stCharacter*> CharacterMap;
-	std::list<stCharacter*> SectorList[dfSECTOR_Y_MAX][dfSECTOR_X_MAX];
+    MemoryPool_LF<stCharacter> CharacterPool;
+    std::map<unsigned __int64, stCharacter*> CharacterMap;
+    std::list<stCharacter*> SectorList[dfSECTOR_Y_MAX][dfSECTOR_X_MAX];
 
-	Logger* pLogger;
+    Logger* pLogger;
 
 
-	alignas(64) long _JobTPS;
-	alignas(64) long UpdateThreadRunningTPS;
-	alignas(64) DWORD UpdateThreadSleepTime;
+    alignas(64) long _JobTPS;
+    alignas(64) long UpdateThreadRunningTPS;
+    alignas(64) DWORD UpdateThreadSleepTime;
 };

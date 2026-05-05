@@ -7,40 +7,37 @@
 
 long CrashDump::_DumpCount = 0;
 
-CrashDump::CrashDump()
-{
-	_DumpCount = 0;
+CrashDump::CrashDump() {
+    _DumpCount = 0;
 
-	_invalid_parameter_handler oldHandler, newHandler;
-	newHandler = myInvalidParameterHandler;
+    _invalid_parameter_handler oldHandler, newHandler;
+    newHandler = myInvalidParameterHandler;
 
-	oldHandler = _set_invalid_parameter_handler(newHandler);
-	_CrtSetReportMode(_CRT_WARN, 0);
-	_CrtSetReportMode(_CRT_ASSERT, 0);
-	_CrtSetReportMode(_CRT_ERROR, 0);
+    oldHandler = _set_invalid_parameter_handler(newHandler);
+    _CrtSetReportMode(_CRT_WARN, 0);
+    _CrtSetReportMode(_CRT_ASSERT, 0);
+    _CrtSetReportMode(_CRT_ERROR, 0);
 
-	_CrtSetReportHook(_custom_Report_hook);
+    _CrtSetReportHook(_custom_Report_hook);
 
-	// pure virtual function called 에러 핸들러를 사용자 정의 함수로 우회
-	_set_purecall_handler(myPurecallHandler);
+    // pure virtual function called 에러 핸들러를 사용자 정의 함수로 우회
+    _set_purecall_handler(myPurecallHandler);
 
-	SetHandlerDump();
+    SetHandlerDump();
 }
 
-void CrashDump::Crash(void)
-{
-	int* p = nullptr;
-	*p = 0;
+void CrashDump::Crash(void) {
+    int* p = nullptr;
+    *p = 0;
 }
 
-LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPointer)
-{
-	SYSTEMTIME stNowTime;
+LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPointer) {
+    SYSTEMTIME stNowTime;
 
-	long DumpCount = InterlockedIncrement(&_DumpCount);
+    long DumpCount = InterlockedIncrement(&_DumpCount);
 
-	// 현재 프로세스의 메모리 사용량 >> 사용량에 비례해서 덤프파일 사이즈가 나올 것이기 때문에 필요없는 로직
-	/*HANDLE hProcess = 0;
+    // 현재 프로세스의 메모리 사용량 >> 사용량에 비례해서 덤프파일 사이즈가 나올 것이기 때문에 필요없는 로직
+    /*HANDLE hProcess = 0;
 	int iWorkingMemory = 0;
 	PROCESS_MEMORY_COUNTERS pmc;
 
@@ -51,38 +48,32 @@ LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPoin
 	if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) iWorkingMemory = (int)(pmc.WorkingSetSize / 1024 / 1024);
 	CloseHandle(hProcess);*/
 
-	// 날짜와 시간
-	WCHAR filename[MAX_PATH];
+    // 날짜와 시간
+    WCHAR filename[MAX_PATH];
 
-	GetLocalTime(&stNowTime);
-	wsprintf(filename, L"Dump_%d%02d%02d_%02d.%02d.%02d_%d.dmp", stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay,
-		stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond,
-		DumpCount);
-	wprintf(L"\n\n\n!!! Crash Error !!! %d.%d.%d / %d:%d:%d\n", stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay,
-		stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond);
-	wprintf(L"Now Save Dump File...\n");
+    GetLocalTime(&stNowTime);
+    wsprintf(filename, L"Dump_%d%02d%02d_%02d.%02d.%02d_%d.dmp", stNowTime.wYear, stNowTime.wMonth,
+             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond, DumpCount);
+    wprintf(L"\n\n\n!!! Crash Error !!! %d.%d.%d / %d:%d:%d\n", stNowTime.wYear, stNowTime.wMonth,
+            stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond);
+    wprintf(L"Now Save Dump File...\n");
 
-	HANDLE hDumpFile = ::CreateFile(filename, GENERIC_WRITE,
-		FILE_SHARE_WRITE,
-		NULL,
-		CREATE_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL,
-		NULL);
+    HANDLE hDumpFile = ::CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS,
+                                    FILE_ATTRIBUTE_NORMAL, NULL);
 
-	if (hDumpFile != INVALID_HANDLE_VALUE)
-	{
-		_MINIDUMP_EXCEPTION_INFORMATION MinidumpExceptionInformation;
+    if (hDumpFile != INVALID_HANDLE_VALUE) {
+        _MINIDUMP_EXCEPTION_INFORMATION MinidumpExceptionInformation;
 
-		MinidumpExceptionInformation.ThreadId = ::GetCurrentThreadId();
-		MinidumpExceptionInformation.ExceptionPointers = pExceptionPointer;
-		MinidumpExceptionInformation.ClientPointers = TRUE;
+        MinidumpExceptionInformation.ThreadId = ::GetCurrentThreadId();
+        MinidumpExceptionInformation.ExceptionPointers = pExceptionPointer;
+        MinidumpExceptionInformation.ClientPointers = TRUE;
 
-		MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile, MiniDumpWithFullMemory,
-			&MinidumpExceptionInformation, NULL, NULL);
+        MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile,
+                          MiniDumpWithFullMemory, &MinidumpExceptionInformation, NULL, NULL);
 
-		CloseHandle(hDumpFile);
-		wprintf(L"CrashDump Save Finish !");
-	}
+        CloseHandle(hDumpFile);
+        wprintf(L"CrashDump Save Finish !");
+    }
 
-	return EXCEPTION_EXECUTE_HANDLER;
+    return EXCEPTION_EXECUTE_HANDLER;
 }

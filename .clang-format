@@ -1,0 +1,61 @@
+# .clang-format for NetworkLibrary
+# Phase 3c-0 (2026-05-05) — Google C++ Style 기반 + 본 프로젝트 조정 (G3)
+#
+# 결정 G3 적용:
+#  - 4-space spaces (TAB 제거)
+#  - Attached braces (Google 기본)
+#  - 100-column 한계 (Google 기본 80)
+#
+# 보수적 옵션:
+#  - SortIncludes: false  (현재 #include 순서가 컴파일에 의미 있을 수 있음)
+#  - ReflowComments: false (한국어 주석 mid-character wrap 방지)
+
+Language: Cpp
+BasedOnStyle: Google
+Standard: c++14
+
+# 들여쓰기
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+AccessModifierOffset: -4
+
+# 중괄호
+BreakBeforeBraces: Attach
+
+# 줄 길이
+ColumnLimit: 100
+
+# 포인터·참조 (Google = Left: "int* p")
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# Include 정렬 — 보수적으로 비활성화
+SortIncludes: false
+
+# 주석 — 한국어 주석 보호
+ReflowComments: false
+
+# 짧은 한 줄 허용
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+
+# 공백
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInAngles: Never
+
+# 빈 줄
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+
+# 인자 묶음
+BinPackArguments: true
+BinPackParameters: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true

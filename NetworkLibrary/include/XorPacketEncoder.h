@@ -11,8 +11,7 @@
  *
  * @note thread-safe: 인스턴스가 stateless (상수만 보유)이라 다중 스레드 공유 안전.
  */
-class XorPacketEncoder : public IPacketEncoder
-{
+class XorPacketEncoder : public IPacketEncoder {
 public:
     /**
      * @brief 생성자.
@@ -31,8 +30,7 @@ public:
 
 private:
 #pragma pack(push, 1)
-    struct NetHeader
-    {
+    struct NetHeader {
         BYTE Code;
         WORD Len;
         BYTE RKey;
@@ -43,7 +41,7 @@ private:
     // 헤더가 CPacket의 reserve 공간(eHEADER_DEFAULT)에 들어가야 함.
     // 더 큰 헤더 인코더 도입 시 CPacket API 확장 필요 (Phase 3b/3c).
     static_assert(sizeof(NetHeader) <= CPacket::eHEADER_DEFAULT,
-        "XorPacketEncoder NetHeader exceeds CPacket reserve space (eHEADER_DEFAULT)");
+                  "XorPacketEncoder NetHeader exceeds CPacket reserve space (eHEADER_DEFAULT)");
 
     BYTE m_headerCode;
     BYTE m_encryptKey;

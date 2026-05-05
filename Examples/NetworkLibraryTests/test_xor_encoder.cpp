@@ -8,14 +8,12 @@
 // XorPacketEncoder Tier 1 단위 테스트 — 인코딩 알고리즘 회귀 검증의 핵심.
 // Encode → Decode 라운드트립 + 검증 함수(VerifyHeaderMagic·PeekPayloadLength) + 실패 경로.
 
-TEST_CASE("XorEncoder: GetHeaderSize returns 5 bytes", "[encoder][peek]")
-{
+TEST_CASE("XorEncoder: GetHeaderSize returns 5 bytes", "[encoder][peek]") {
     XorPacketEncoder enc;
     REQUIRE(enc.GetHeaderSize() == 5);
 }
 
-TEST_CASE("XorEncoder: 1-byte payload roundtrip", "[encoder][roundtrip]")
-{
+TEST_CASE("XorEncoder: 1-byte payload roundtrip", "[encoder][roundtrip]") {
     XorPacketEncoder enc(0x77, 0x32);
     CPacket pkt;
     pkt.Clear();
@@ -33,8 +31,7 @@ TEST_CASE("XorEncoder: 1-byte payload roundtrip", "[encoder][roundtrip]")
     REQUIRE(recovered == original);
 }
 
-TEST_CASE("XorEncoder: empty payload (0 bytes) roundtrip", "[encoder][roundtrip][edge]")
-{
+TEST_CASE("XorEncoder: empty payload (0 bytes) roundtrip", "[encoder][roundtrip][edge]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
@@ -47,13 +44,13 @@ TEST_CASE("XorEncoder: empty payload (0 bytes) roundtrip", "[encoder][roundtrip]
     REQUIRE(pkt.GetDataSize() == 0);
 }
 
-TEST_CASE("XorEncoder: 16-byte payload roundtrip", "[encoder][roundtrip]")
-{
+TEST_CASE("XorEncoder: 16-byte payload roundtrip", "[encoder][roundtrip]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
     char originalBytes[16];
-    for (int i = 0; i < 16; i++) originalBytes[i] = (char)(i * 7 + 3);
+    for (int i = 0; i < 16; i++)
+        originalBytes[i] = (char)(i * 7 + 3);
     pkt.PutData(originalBytes, 16);
 
     enc.Encode(pkt);
@@ -67,13 +64,13 @@ TEST_CASE("XorEncoder: 16-byte payload roundtrip", "[encoder][roundtrip]")
     REQUIRE(memcmp(recovered, originalBytes, 16) == 0);
 }
 
-TEST_CASE("XorEncoder: 1000-byte payload roundtrip", "[encoder][roundtrip]")
-{
+TEST_CASE("XorEncoder: 1000-byte payload roundtrip", "[encoder][roundtrip]") {
     XorPacketEncoder enc;
     CPacket pkt(2048);
     pkt.Clear();
     char originalBytes[1000];
-    for (int i = 0; i < 1000; i++) originalBytes[i] = (char)((i * 13 + 7) & 0xFF);
+    for (int i = 0; i < 1000; i++)
+        originalBytes[i] = (char)((i * 13 + 7) & 0xFF);
     pkt.PutData(originalBytes, 1000);
 
     enc.Encode(pkt);
@@ -87,13 +84,13 @@ TEST_CASE("XorEncoder: 1000-byte payload roundtrip", "[encoder][roundtrip]")
     REQUIRE(memcmp(recovered, originalBytes, 1000) == 0);
 }
 
-TEST_CASE("XorEncoder: 4096-byte payload roundtrip (max default)", "[encoder][roundtrip][edge]")
-{
+TEST_CASE("XorEncoder: 4096-byte payload roundtrip (max default)", "[encoder][roundtrip][edge]") {
     XorPacketEncoder enc;
     CPacket pkt(8192);  // header(5) + payload(4096) + reserve(20) = 4121 < 8192
     pkt.Clear();
     char originalBytes[4096];
-    for (int i = 0; i < 4096; i++) originalBytes[i] = (char)((i * 31 + 11) & 0xFF);
+    for (int i = 0; i < 4096; i++)
+        originalBytes[i] = (char)((i * 31 + 11) & 0xFF);
     pkt.PutData(originalBytes, 4096);
 
     enc.Encode(pkt);
@@ -107,12 +104,11 @@ TEST_CASE("XorEncoder: 4096-byte payload roundtrip (max default)", "[encoder][ro
     REQUIRE(memcmp(recovered, originalBytes, 4096) == 0);
 }
 
-TEST_CASE("XorEncoder: all-zero payload roundtrip", "[encoder][roundtrip][pattern]")
-{
+TEST_CASE("XorEncoder: all-zero payload roundtrip", "[encoder][roundtrip][pattern]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
-    char zeros[32] = { 0 };
+    char zeros[32] = {0};
     pkt.PutData(zeros, 32);
 
     enc.Encode(pkt);
@@ -124,8 +120,7 @@ TEST_CASE("XorEncoder: all-zero payload roundtrip", "[encoder][roundtrip][patter
     REQUIRE(memcmp(recovered, zeros, 32) == 0);
 }
 
-TEST_CASE("XorEncoder: all-FF payload roundtrip", "[encoder][roundtrip][pattern]")
-{
+TEST_CASE("XorEncoder: all-FF payload roundtrip", "[encoder][roundtrip][pattern]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
@@ -142,8 +137,7 @@ TEST_CASE("XorEncoder: all-FF payload roundtrip", "[encoder][roundtrip][pattern]
     REQUIRE(memcmp(recovered, ones, 32) == 0);
 }
 
-TEST_CASE("XorEncoder: mixed types roundtrip", "[encoder][roundtrip]")
-{
+TEST_CASE("XorEncoder: mixed types roundtrip", "[encoder][roundtrip]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
@@ -167,8 +161,7 @@ TEST_CASE("XorEncoder: mixed types roundtrip", "[encoder][roundtrip]")
     REQUIRE(b == 0xFF);
 }
 
-TEST_CASE("XorEncoder: Encode idempotency - second call is noop", "[encoder][idempotent]")
-{
+TEST_CASE("XorEncoder: Encode idempotency - second call is noop", "[encoder][idempotent]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
@@ -188,8 +181,7 @@ TEST_CASE("XorEncoder: Encode idempotency - second call is noop", "[encoder][ide
     REQUIRE(bytes1 == bytes2);
 }
 
-TEST_CASE("XorEncoder: Decode rejects corrupted payload byte", "[encoder][decode_fail]")
-{
+TEST_CASE("XorEncoder: Decode rejects corrupted payload byte", "[encoder][decode_fail]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
@@ -203,8 +195,7 @@ TEST_CASE("XorEncoder: Decode rejects corrupted payload byte", "[encoder][decode
     REQUIRE_FALSE(enc.Decode(pkt));
 }
 
-TEST_CASE("XorEncoder: Decode rejects corrupted checksum byte", "[encoder][decode_fail]")
-{
+TEST_CASE("XorEncoder: Decode rejects corrupted checksum byte", "[encoder][decode_fail]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
@@ -218,8 +209,7 @@ TEST_CASE("XorEncoder: Decode rejects corrupted checksum byte", "[encoder][decod
     REQUIRE_FALSE(enc.Decode(pkt));
 }
 
-TEST_CASE("XorEncoder: VerifyHeaderMagic accepts correct magic", "[encoder][peek]")
-{
+TEST_CASE("XorEncoder: VerifyHeaderMagic accepts correct magic", "[encoder][peek]") {
     XorPacketEncoder enc(0x77, 0x32);
     CPacket pkt;
     pkt.Clear();
@@ -229,8 +219,7 @@ TEST_CASE("XorEncoder: VerifyHeaderMagic accepts correct magic", "[encoder][peek
     REQUIRE(enc.VerifyHeaderMagic(pkt.GetReadBufferPtr()));
 }
 
-TEST_CASE("XorEncoder: VerifyHeaderMagic rejects wrong magic", "[encoder][peek]")
-{
+TEST_CASE("XorEncoder: VerifyHeaderMagic rejects wrong magic", "[encoder][peek]") {
     XorPacketEncoder enc77(0x77, 0x32);
     XorPacketEncoder enc55(0x55, 0x32);
 
@@ -242,8 +231,7 @@ TEST_CASE("XorEncoder: VerifyHeaderMagic rejects wrong magic", "[encoder][peek]"
     REQUIRE_FALSE(enc77.VerifyHeaderMagic(pkt.GetReadBufferPtr()));
 }
 
-TEST_CASE("XorEncoder: PeekPayloadLength returns correct size", "[encoder][peek]")
-{
+TEST_CASE("XorEncoder: PeekPayloadLength returns correct size", "[encoder][peek]") {
     XorPacketEncoder enc;
     CPacket pkt;
     pkt.Clear();
@@ -255,13 +243,12 @@ TEST_CASE("XorEncoder: PeekPayloadLength returns correct size", "[encoder][peek]
     REQUIRE(len == sizeof(__int64));
 }
 
-TEST_CASE("XorEncoder: PeekPayloadLength rejects oversized payload", "[encoder][peek]")
-{
+TEST_CASE("XorEncoder: PeekPayloadLength rejects oversized payload", "[encoder][peek]") {
     XorPacketEncoder smallMax(0x77, 0x32, 4);  // max 4 byte
     CPacket pkt;
     pkt.Clear();
     pkt << (int)42 << (int)100;  // 8 byte — 한계 초과
-    smallMax.Encode(pkt);  // Encode는 max 안 봄, encoded됨
+    smallMax.Encode(pkt);        // Encode는 max 안 봄, encoded됨
 
     std::size_t len = 0;
     REQUIRE_FALSE(smallMax.PeekPayloadLength(pkt.GetReadBufferPtr(), len));

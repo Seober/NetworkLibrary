@@ -12,8 +12,7 @@ class CPacket;
  * @note 인코더는 stateless(상수만 보유)일 것을 권장. 다중 스레드가 같은 인스턴스 공유 안전.
  *       상태 보유 시(예: 키 로테이션) 구현체가 자체 동시성 보호 필요.
  */
-class IPacketEncoder
-{
+class IPacketEncoder {
 public:
     virtual ~IPacketEncoder() = default;
 
