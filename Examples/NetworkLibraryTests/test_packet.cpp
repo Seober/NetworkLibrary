@@ -6,9 +6,9 @@
 
 TEST_CASE("CPacket: default constructor leaves empty buffer", "[packet][ctor]") {
     CPacket p;
-    REQUIRE(p.GetBufferSize() == CPacket::eBUFFER_DEFAULT);
+    REQUIRE(p.GetBufferSize() == CPacket::kBufferDefault);
     REQUIRE(p.GetDataSize() == 0);
-    REQUIRE(p.GetFreeSize() == CPacket::eBUFFER_DEFAULT);
+    REQUIRE(p.GetFreeSize() == CPacket::kBufferDefault);
 }
 
 TEST_CASE("CPacket: BYTE roundtrip", "[packet][serialize]") {

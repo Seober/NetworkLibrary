@@ -2,18 +2,18 @@
 #include <winsock2.h>
 #include <windows.h>
 
-enum eSESSION_STATE {
-    eSTATE_IDLE = 0,      // 초기 상태, 아직 socket 미생성
-    eSTATE_CONNECTING,    // connect() 호출 후 완료 대기 (non-blocking)
-    eSTATE_CONNECTED,     // 연결 완료, 로그인 패킷 송신 대기
-    eSTATE_LOGIN_SENT,    // 로그인 패킷 송신 완료, 응답 대기
-    eSTATE_ACTIVE,        // 로그인 성공, 채팅 송신 가능
-    eSTATE_DISCONNECTED,  // 연결 끊김 — reconnectAt 후 재연결 시도
+enum class SessionState {
+    kIdle = 0,      // 초기 상태, 아직 socket 미생성
+    kConnecting,    // connect() 호출 후 완료 대기 (non-blocking)
+    kConnected,     // 연결 완료, 로그인 패킷 송신 대기
+    kLoginSent,     // 로그인 패킷 송신 완료, 응답 대기
+    kActive,        // 로그인 성공, 채팅 송신 가능
+    kDisconnected,  // 연결 끊김 — reconnectAt 후 재연결 시도
 };
 
 struct ClientSession {
     SOCKET sock;
-    eSESSION_STATE state;
+    SessionState state;
 
     __int64 accountNo;
     WORD sectorX;

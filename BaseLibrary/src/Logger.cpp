@@ -6,13 +6,13 @@ Logger* Logger::pLogger = NULL;
 
 
 Logger::Logger() {
-    Log_Level = en_LOG_LEVEL::eLEVEL_DEBUG;
+    Log_Level = LogLevel::kDebug;
     _LogCnt = 0;
 }
 
 
-void Logger::Log(const WCHAR* szType, en_LOG_LEVEL LogLevel, const WCHAR* szStringFormat, ...) {
-    if (Log_Level <= LogLevel) {
+void Logger::Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringFormat, ...) {
+    if (Log_Level <= level) {
         unsigned __int64 LogCnt = InterlockedIncrement(&_LogCnt);
 
         int retval_FileName;
@@ -30,8 +30,8 @@ void Logger::Log(const WCHAR* szType, en_LOG_LEVEL LogLevel, const WCHAR* szStri
                                           stNowTime.wYear, stNowTime.wMonth, szType);
 
         //Setting Log_Tag
-        switch (LogLevel) {
-            case en_LOG_LEVEL::eLEVEL_DEBUG:
+        switch (level) {
+            case LogLevel::kDebug:
                 retval_LogTag = StringCchPrintf(
                     szLogTag, df_LOG_BUFSIZE_LOGTAG,
                     L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / DEBUG] [%08I64u] ", szType,
@@ -39,7 +39,7 @@ void Logger::Log(const WCHAR* szType, en_LOG_LEVEL LogLevel, const WCHAR* szStri
                     stNowTime.wMinute, stNowTime.wSecond, LogCnt);
                 break;
 
-            case en_LOG_LEVEL::eLEVEL_ERROR:
+            case LogLevel::kError:
                 retval_LogTag = StringCchPrintf(
                     szLogTag, df_LOG_BUFSIZE_LOGTAG,
                     L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / ERROR] [%08I64u] ", szType,
@@ -47,7 +47,7 @@ void Logger::Log(const WCHAR* szType, en_LOG_LEVEL LogLevel, const WCHAR* szStri
                     stNowTime.wMinute, stNowTime.wSecond, LogCnt);
                 break;
 
-            case en_LOG_LEVEL::eLEVEL_SYSTEM:
+            case LogLevel::kSystem:
                 retval_LogTag = StringCchPrintf(
                     szLogTag, df_LOG_BUFSIZE_LOGTAG,
                     L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / SYSTEM] [%08I64u] ", szType,

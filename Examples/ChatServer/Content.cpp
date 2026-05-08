@@ -1,6 +1,6 @@
 ﻿//#include "CNet_Server.h"
 #include "Content.h"
-#include "Protocol.h"
+#include "ChatProtocol.h"
 
 #include "LockFree_Queue_TLS.h"
 
@@ -97,7 +97,7 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
                     pServer->CheckHeartBeat();
                     break;
                 default:
-                    pServer->pLogger->Log(L"Content", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                    pServer->pLogger->Log(L"Content", Logger::LogLevel::kError,
                                           L"JobType:%d", pJob->JobType);
                     pServer->pLogger->Crash();
                     break;
@@ -124,7 +124,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
 
     pCharacter = FindCharacter(SessionID);
     if (pCharacter == NULL) {
-        pLogger->Log(L"Content", Logger::en_LOG_LEVEL::eLEVEL_ERROR, L"# Character Not Exist #");
+        pLogger->Log(L"Content", Logger::LogLevel::kError, L"# Character Not Exist #");
         pLogger->Crash();
     }
 
@@ -133,12 +133,12 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
     *pMessagePacket >> MessageType;
 
     switch (MessageType) {
-        case en_PACKET_CS_CHAT_SERVER:
+        case kCsChatServer:
             break;
 
-        case en_PACKET_CS_CHAT_REQ_LOGIN: {
+        case kCsChatReqLogin: {
             if (pCharacter->SectorX != -1) {
-                pLogger->Log(L"Content", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                pLogger->Log(L"Content", Logger::LogLevel::kError,
                              L"# Character Already Exist #");
                 pLogger->Crash();
             }
@@ -147,7 +147,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
             pMessagePacket->GetData(pCharacter->ID, 20);
             pMessagePacket->GetData(pCharacter->Nickname, 20);
             BYTE Status;
-            MessageType = en_PACKET_CS_CHAT_RES_LOGIN;
+            MessageType = kCsChatResLogin;
 
             pMessagePacket->Clear();
 
@@ -166,7 +166,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
             //}
         } break;
 
-        case en_PACKET_CS_CHAT_REQ_SECTOR_MOVE: {
+        case kCsChatReqSectorMove: {
             INT64 AccountNo;
             WORD SectorX;
             WORD SectorY;
@@ -175,7 +175,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
 
             if (pCharacter->AccountNo != AccountNo) {
                 pLogger->Log(
-                    L"Disconnect", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                    L"Disconnect", Logger::LogLevel::kError,
                     L"# SectorMove # KillSession Called > AccountNo:%d, CharacterAccountNo:%d",
                     AccountNo, pCharacter->AccountNo);
                 KillSession(pCharacter->SessionID);
@@ -207,7 +207,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
                 SectorList[SectorY][SectorX].push_back(pCharacter);
             }
 
-            MessageType = en_PACKET_CS_CHAT_RES_SECTOR_MOVE;
+            MessageType = kCsChatResSectorMove;
             pMessagePacket->Clear();
             *pMessagePacket << MessageType << pCharacter->AccountNo << pCharacter->SectorX
                             << pCharacter->SectorY;
@@ -215,14 +215,14 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
 
         } break;
 
-        case en_PACKET_CS_CHAT_REQ_MESSAGE: {
+        case kCsChatReqMessage: {
             INT64 AccountNo;
             WORD MessageLen;
 
             *pMessagePacket >> AccountNo >> MessageLen;
             if (pCharacter->AccountNo != AccountNo) {
                 pLogger->Log(
-                    L"Disconnect", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                    L"Disconnect", Logger::LogLevel::kError,
                     L"# SectorMove # KillSession Called > AccountNo:%d, CharacterAccountNo:%d",
                     AccountNo, pCharacter->AccountNo);
                 KillSession(pCharacter->SessionID);
@@ -230,7 +230,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
             }
 
             if (MessageLen >= dfMESSAGEBUFSIZE) {
-                pLogger->Log(L"ASDF", Logger::en_LOG_LEVEL::eLEVEL_ERROR, L"Message Len:%d",
+                pLogger->Log(L"ASDF", Logger::LogLevel::kError, L"Message Len:%d",
                              MessageLen);
                 pLogger->Crash();
             }
@@ -238,7 +238,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
             pMessagePacket->GetData((char*)MessageBuf, MessageLen);
             MessageBuf[MessageLen / 2] = L'\0';
 
-            MessageType = en_PACKET_CS_CHAT_RES_MESSAGE;
+            MessageType = kCsChatResMessage;
             pMessagePacket->Clear();
 
             *pMessagePacket << MessageType << pCharacter->AccountNo;
@@ -252,13 +252,13 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
         } break;
 
 
-        case en_PACKET_CS_CHAT_REQ_HEARTBEAT:
+        case kCsChatReqHeartbeat:
             break;
 
         default: {
             KillSession(SessionID);
             pLogger->Log(
-                L"Content", Logger::en_LOG_LEVEL::eLEVEL_SYSTEM,
+                L"Content", Logger::LogLevel::kSystem,
                 L"# MessageType Undefined # MessageType:%d, AccountNo:%d, ID:%s, Nickname:%s",
                 MessageType, pCharacter->AccountNo, pCharacter->ID, pCharacter->Nickname);
         } break;
@@ -298,7 +298,7 @@ void Chat_Server::CheckHeartBeat(void) {
         stCharacter* pCharacter = iter_CharacterMap->second;
 
         if (Cur_Time - pCharacter->dwLastRecvTime > 40000) {
-            pLogger->Log(L"Content", Logger::en_LOG_LEVEL::eLEVEL_SYSTEM,
+            pLogger->Log(L"Content", Logger::LogLevel::kSystem,
                          L"# Character TimeOut # AccountNo:%d, ID:%s, Nickname:%s",
                          pCharacter->AccountNo, pCharacter->ID, pCharacter->Nickname);
             KillSession(pCharacter->SessionID);
@@ -325,7 +325,7 @@ void Chat_Server::LeaveCharacter(unsigned __int64 SessionID) {
 
         CharacterPool.Free(pCharacter);
     } else {
-        pLogger->Log(L"Content", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+        pLogger->Log(L"Content", Logger::LogLevel::kError,
                      L"# LeaveSession # Character Not Exist");
         pLogger->Crash();
     }

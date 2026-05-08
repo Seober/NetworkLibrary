@@ -12,9 +12,7 @@
 template <typename T>
 class MemoryPool_LF {
 public:
-    enum DEFALUT {
-        eDEFAULT_POOL = 300
-    };
+    static constexpr int kDefaultPool = 300;
 
     struct stNode {  //abcdef
         MEMORYPOOL_LF_PAD_TYPE Pad_UnderFlow = MEMORYPOOL_LF_PAD_UNDERFLOW;
@@ -50,7 +48,7 @@ public:
         inline stNode* operator->(void) { return (stNode*)Bit.Index; }
     };
 
-    MemoryPool_LF(int initSize = eDEFAULT_POOL);
+    MemoryPool_LF(int initSize = kDefaultPool);
     ~MemoryPool_LF(void) {
         if (iCnt_TotalNode == iCnt_FreeNode + iCnt_UseNode)
             Clear_MemoryPool();

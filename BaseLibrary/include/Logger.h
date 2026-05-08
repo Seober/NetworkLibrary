@@ -7,13 +7,13 @@
 
 class Logger {
 public:
-    enum class en_LOG_LEVEL {
-        eLEVEL_DEBUG,
-        eLEVEL_ERROR,
-        eLEVEL_SYSTEM
+    enum class LogLevel {
+        kDebug,
+        kError,
+        kSystem
     };
 
-    void Log(const WCHAR* szType, en_LOG_LEVEL LogLevel, const WCHAR* szStringFormat, ...);
+    void Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringFormat, ...);
 
     static Logger* GetInstance(void) {
         if (pLogger == NULL) {
@@ -29,7 +29,7 @@ public:
 
     void Crash(void) { Crasher.Crash(); }
 
-    void SetLogLevel(en_LOG_LEVEL LogLevel) { Log_Level = LogLevel; }
+    void SetLogLevel(LogLevel level) { Log_Level = level; }
 
 
 private:
@@ -50,7 +50,7 @@ private:
 private:
     CrashDump Crasher;
 
-    en_LOG_LEVEL Log_Level;
+    LogLevel Log_Level;
 
     unsigned __int64 _LogCnt;
 

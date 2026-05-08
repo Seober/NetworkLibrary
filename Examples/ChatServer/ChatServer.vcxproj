@@ -57,7 +57,7 @@
   <ItemGroup>
     <ClInclude Include="Content.h" />
     <ClInclude Include="Monitoring_Tool.h" />
-    <ClInclude Include="Protocol.h" />
+    <ClInclude Include="ChatProtocol.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Content.cpp" />

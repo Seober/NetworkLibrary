@@ -11,27 +11,25 @@
 template <typename T>
 class MemoryPool_TLS_Chunck {
 public:
-    enum CHUNCK_SIZE {
-        eCHUNCK_DEFAULT = 100
-    };
+    static constexpr int kChunkDefault = 100;
 
     void* AllocChunck() {
         void* pChunck;
         if (ChunckStack.Pop(pChunck) == false) {
-            InterlockedExchangeAdd(&TotalSize, eCHUNCK_DEFAULT);
-            InterlockedExchangeAdd(&UseSize, eCHUNCK_DEFAULT);
+            InterlockedExchangeAdd(&TotalSize, kChunkDefault);
+            InterlockedExchangeAdd(&UseSize, kChunkDefault);
             pChunck = NULL;
         } else {
-            InterlockedExchangeAdd(&FreeSize, -eCHUNCK_DEFAULT);
-            InterlockedExchangeAdd(&UseSize, eCHUNCK_DEFAULT);
+            InterlockedExchangeAdd(&FreeSize, -kChunkDefault);
+            InterlockedExchangeAdd(&UseSize, kChunkDefault);
         }
         return pChunck;
     }
 
     void FreeChunck(void* pChunck) {
-        int ChunckSize = eCHUNCK_DEFAULT;
-        InterlockedExchangeAdd(&UseSize, -eCHUNCK_DEFAULT);
-        InterlockedExchangeAdd(&FreeSize, eCHUNCK_DEFAULT);
+        int ChunckSize = kChunkDefault;
+        InterlockedExchangeAdd(&UseSize, -kChunkDefault);
+        InterlockedExchangeAdd(&FreeSize, kChunkDefault);
         ChunckStack.Push(pChunck);
     }
 
@@ -56,7 +54,7 @@ public:
         return TLS_idx;
     }
     int GetChunckSize(void) {
-        return eCHUNCK_DEFAULT;
+        return kChunkDefault;
     }
 
     int GetTotalMemCnt(void) {

@@ -34,7 +34,7 @@ unsigned WINAPI CNet_Server::AcceptThread(LPVOID lpThreadParameter) {
                 case 10004:
                     break;
                 default:
-                    pLogger->Log(L"Accept", Logger::en_LOG_LEVEL::eLEVEL_SYSTEM,
+                    pLogger->Log(L"Accept", Logger::LogLevel::kSystem,
                                  L"AcceptFuc Err:%d\nMake Crash", Err_Code);
                     pLogger->Crash();
                     break;
@@ -45,7 +45,7 @@ unsigned WINAPI CNet_Server::AcceptThread(LPVOID lpThreadParameter) {
 
         if (!pServer->OnConnectionRequest()) {
             closesocket(ClientSocket);
-            pLogger->Log(L"Accept", Logger::en_LOG_LEVEL::eLEVEL_DEBUG,
+            pLogger->Log(L"Accept", Logger::LogLevel::kDebug,
                          L"Max User Connected, ConnectedSession:%d\n",
                          pServer->GetSessionCnt_Connected());
             continue;
@@ -54,7 +54,7 @@ unsigned WINAPI CNet_Server::AcceptThread(LPVOID lpThreadParameter) {
         CNet_Server::stSESSION* pSession = pServer->GetFreeSession();
         if (pSession == NULL) {
             closesocket(ClientSocket);
-            pLogger->Log(L"Accept", Logger::en_LOG_LEVEL::eLEVEL_DEBUG,
+            pLogger->Log(L"Accept", Logger::LogLevel::kDebug,
                          L"Not Enough FreeSession, ConnectedSession:%d\n",
                          pServer->GetSessionCnt_Connected());
             continue;
@@ -96,7 +96,7 @@ unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter) {
                                   &tmpOverlapped, INFINITE);
 
         if (dwTransferred == 0 && targetSession == NULL && tmpOverlapped == NULL) {
-            pLogger->Log(L"Network", Logger::en_LOG_LEVEL::eLEVEL_SYSTEM, L"# GQCS return NULL");
+            pLogger->Log(L"Network", Logger::LogLevel::kSystem, L"# GQCS return NULL");
             pLogger->Crash();
             break;
         }
@@ -123,7 +123,7 @@ unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter) {
 
                         WCHAR szIPBUF[32];
                         pLogger->Log(
-                            L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_SYSTEM,
+                            L"NetServer", Logger::LogLevel::kSystem,
                             L"Packet Decode Failed, SessionID:%p, IP:%s", targetSession->SessionID,
                             InetNtop(AF_INET, &targetSession->ClientAddr.sin_addr, szIPBUF, 32));
                         break;
@@ -169,7 +169,7 @@ unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter) {
 
 
             else {
-                pLogger->Log(L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                pLogger->Log(L"NetServer", Logger::LogLevel::kError,
                              L"Overlapped Pointer Error, SessionID:%p, UseFlag:%d, DeleteFlag:%d, "
                              L"SessionRef:%d",
                              targetSession->SessionID, targetSession->SessionUseFlag,
@@ -365,7 +365,7 @@ bool CNet_Server::SendPost(stSESSION* pSession, DWORD Flag) {
         if (pSession->SendQ.Dequeue(tmpPacket) == false) {
             Logger* pLogger = Logger::GetInstance();
             pLogger->Log(
-                L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                L"NetServer", Logger::LogLevel::kError,
                 L"SendQ->Dequeue Failed, SessionID:%p, tmpRemainCnt:%d, SendQRemainCnt:%d,",
                 pSession->SessionID, PacketCnt, pSession->SendQ.GetUseSize());
             pLogger->Crash();
@@ -393,7 +393,7 @@ bool CNet_Server::SendPost(stSESSION* pSession, DWORD Flag) {
                 return false;
             default: {
                 Logger* pLogger = Logger::GetInstance();
-                pLogger->Log(L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                pLogger->Log(L"NetServer", Logger::LogLevel::kError,
                              L"# WSASend Func Err # ErrCode:%d, SessionID:%p, UseFlag:%d, "
                              L"DeleteFlag:%d, SessionRef:%d",
                              Err_Code, pSession->SessionID, pSession->SessionUseFlag,
@@ -435,7 +435,7 @@ bool CNet_Server::RecvPost(stSESSION* pSession, DWORD Flag) {
                 break;
             default: {
                 Logger* pLogger = Logger::GetInstance();
-                pLogger->Log(L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+                pLogger->Log(L"NetServer", Logger::LogLevel::kError,
                              L"# WSARecv Func Err # ErrCode:%d, SessionID:%p, UseFlag:%d, "
                              L"DeleteFlag:%d, SessionRef:%d",
                              Err_Code, pSession->SessionID, pSession->SessionUseFlag,
@@ -584,7 +584,7 @@ bool CNet_Server::GetPacketMessage(CPacket* pPacket, CPacket* pRecvQ) {
     int retval_GetData = pRecvQ->GetData(pPacket->GetWriteBufferPtr(), (int)payloadLen);
     if (retval_GetData != (int)payloadLen) {
         Logger* pLogger = Logger::GetInstance();
-        pLogger->Log(L"NetServer", Logger::en_LOG_LEVEL::eLEVEL_ERROR,
+        pLogger->Log(L"NetServer", Logger::LogLevel::kError,
                      L"# CPacket GetData Func Err # EnqueueSize:%d, Return:%d", (int)payloadLen,
                      retval_GetData);
         pLogger->Crash();

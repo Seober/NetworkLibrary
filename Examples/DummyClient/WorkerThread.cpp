@@ -3,7 +3,7 @@
 #define FD_SETSIZE 1024
 
 #include "WorkerThread.h"
-#include "../ChatServer/Protocol.h"
+#include "../ChatServer/ChatProtocol.h"
 #include "CPacket.h"
 
 #include <process.h>
@@ -42,7 +42,7 @@ static void InitiateConnect(ClientSession& s, WorkerContext* ctx) {
     s.sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s.sock == INVALID_SOCKET) {
         s.reconnectAt = ComputeReconnectAt();
-        s.state = eSTATE_DISCONNECTED;
+        s.state = SessionState::kDisconnected;
         return;
     }
 
@@ -55,18 +55,18 @@ static void InitiateConnect(ClientSession& s, WorkerContext* ctx) {
     if (rc == 0) {
         // 즉시 완료 (드물지만 가능)
         ResetSessionForReconnect(s);
-        s.state = eSTATE_CONNECTED;
+        s.state = SessionState::kConnected;
         s.lastHeartbeat = GetTickCount();
         s.lastMessage = GetTickCount();
         InterlockedIncrement(ctx->pConnected);
     } else {
         int err = WSAGetLastError();
         if (err == WSAEWOULDBLOCK) {
-            s.state = eSTATE_CONNECTING;
+            s.state = SessionState::kConnecting;
         } else {
             closesocket(s.sock);
             s.sock = INVALID_SOCKET;
-            s.state = eSTATE_DISCONNECTED;
+            s.state = SessionState::kDisconnected;
             s.reconnectAt = ComputeReconnectAt();
         }
     }
@@ -74,9 +74,9 @@ static void InitiateConnect(ClientSession& s, WorkerContext* ctx) {
 
 // ACTIVE → DISCONNECTED 전환 시 pActive 감소 (현재 active 수 추적용)
 static void MarkDisconnected(ClientSession& s, WorkerContext* ctx) {
-    if (s.state == eSTATE_ACTIVE)
+    if (s.state == SessionState::kActive)
         InterlockedDecrement(ctx->pActive);
-    s.state = eSTATE_DISCONNECTED;
+    s.state = SessionState::kDisconnected;
 }
 
 // CONNECTING 세션의 select 결과 처리
@@ -84,7 +84,7 @@ static void HandleConnectComplete(ClientSession& s, WorkerContext* ctx, bool wri
     if (error) {
         closesocket(s.sock);
         s.sock = INVALID_SOCKET;
-        s.state = eSTATE_DISCONNECTED;
+        s.state = SessionState::kDisconnected;
         s.reconnectAt = ComputeReconnectAt();
         return;
     }
@@ -94,14 +94,14 @@ static void HandleConnectComplete(ClientSession& s, WorkerContext* ctx, bool wri
         getsockopt(s.sock, SOL_SOCKET, SO_ERROR, (char*)&sockErr, &len);
         if (sockErr == 0) {
             ResetSessionForReconnect(s);
-            s.state = eSTATE_CONNECTED;
+            s.state = SessionState::kConnected;
             s.lastHeartbeat = GetTickCount();
             s.lastMessage = GetTickCount();
             InterlockedIncrement(ctx->pConnected);
         } else {
             closesocket(s.sock);
             s.sock = INVALID_SOCKET;
-            s.state = eSTATE_DISCONNECTED;
+            s.state = SessionState::kDisconnected;
             s.reconnectAt = ComputeReconnectAt();
         }
     }
@@ -111,7 +111,7 @@ static void SendLoginPacket(ClientSession& s, WorkerContext* ctx, int globalIdx)
     CPacket packet;
     packet.Clear();
 
-    WORD type = en_PACKET_CS_CHAT_REQ_LOGIN;
+    WORD type = kCsChatReqLogin;
     __int64 accountNo = (__int64)globalIdx + 1;
 
     WCHAR id[20] = {0};
@@ -138,14 +138,14 @@ static void SendLoginPacket(ClientSession& s, WorkerContext* ctx, int globalIdx)
     s.sendBytes += copyLen;
 
     s.accountNo = accountNo;
-    s.state = eSTATE_LOGIN_SENT;
+    s.state = SessionState::kLoginSent;
 }
 
 static void SendSectorMovePacket(ClientSession& s, WorkerContext* ctx) {
     CPacket packet;
     packet.Clear();
 
-    WORD type = en_PACKET_CS_CHAT_REQ_SECTOR_MOVE;
+    WORD type = kCsChatReqSectorMove;
     WORD sectorX = (WORD)(rand() % 50);
     WORD sectorY = (WORD)(rand() % 50);
 
@@ -171,7 +171,7 @@ static void SendChatPacket(ClientSession& s, WorkerContext* ctx) {
     CPacket packet;
     packet.Clear();
 
-    WORD type = en_PACKET_CS_CHAT_REQ_MESSAGE;
+    WORD type = kCsChatReqMessage;
     WCHAR message[64];
     int len = swprintf_s(message, 64, L"Test from DC%lld", s.accountNo);
     WORD messageLen = (WORD)(len * sizeof(WCHAR));
@@ -197,7 +197,7 @@ static void SendHeartbeatPacket(ClientSession& s, WorkerContext* ctx) {
     CPacket packet;
     packet.Clear();
 
-    WORD type = en_PACKET_CS_CHAT_REQ_HEARTBEAT;
+    WORD type = kCsChatReqHeartbeat;
     packet << type;
 
     ctx->encoder->Encode(packet);
@@ -256,12 +256,12 @@ static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx) {
         tmpPacket >> type;
 
         switch (type) {
-            case en_PACKET_CS_CHAT_RES_LOGIN: {
+            case kCsChatResLogin: {
                 BYTE status;
                 __int64 accountNo;
                 tmpPacket >> status >> accountNo;
                 if (status == 1) {
-                    s.state = eSTATE_ACTIVE;
+                    s.state = SessionState::kActive;
                     s.disconnectAt = ComputeDisconnectAt(ctx);
                     InterlockedIncrement(ctx->pActive);
                     // 로그인 성공 즉시 섹터 이동
@@ -274,13 +274,13 @@ static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx) {
                 }
                 break;
             }
-            case en_PACKET_CS_CHAT_RES_MESSAGE: {
+            case kCsChatResMessage: {
                 s.messagesRecv++;
                 InterlockedIncrement(ctx->pTPS_Recv);
                 InterlockedIncrement64(ctx->pTotalRecv);
                 break;
             }
-            case en_PACKET_CS_CHAT_RES_SECTOR_MOVE:
+            case kCsChatResSectorMove:
                 break;
             default:
                 break;
@@ -349,7 +349,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
         ClientSession& s = ctx->sessions[i];
         s.sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (s.sock == INVALID_SOCKET) {
-            s.state = eSTATE_DISCONNECTED;
+            s.state = SessionState::kDisconnected;
             s.reconnectAt = ComputeReconnectAt();
             InterlockedIncrement(ctx->pFailed);
             continue;
@@ -361,7 +361,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
         if (connect(s.sock, (SOCKADDR*)&ctx->serverAddr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
             closesocket(s.sock);
             s.sock = INVALID_SOCKET;
-            s.state = eSTATE_DISCONNECTED;
+            s.state = SessionState::kDisconnected;
             s.reconnectAt = ComputeReconnectAt();
             InterlockedIncrement(ctx->pFailed);
             continue;
@@ -370,7 +370,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
         u_long mode = 1;
         ioctlsocket(s.sock, FIONBIO, &mode);
 
-        s.state = eSTATE_CONNECTED;
+        s.state = SessionState::kConnected;
         s.lastHeartbeat = GetTickCount();
         s.lastMessage = GetTickCount();
         InterlockedIncrement(ctx->pConnected);
@@ -388,10 +388,10 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
             ClientSession& s = ctx->sessions[i];
             if (s.sock == INVALID_SOCKET)
                 continue;
-            if (s.state >= eSTATE_DISCONNECTED)
+            if (s.state >= SessionState::kDisconnected)
                 continue;
 
-            if (s.state == eSTATE_CONNECTING) {
+            if (s.state == SessionState::kConnecting) {
                 // non-blocking connect 완료/실패 감지
                 FD_SET(s.sock, &writefds);
                 FD_SET(s.sock, &exceptfds);
@@ -418,7 +418,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
                     if (s.sock == INVALID_SOCKET)
                         continue;
 
-                    if (s.state == eSTATE_CONNECTING) {
+                    if (s.state == SessionState::kConnecting) {
                         bool writable = FD_ISSET(s.sock, &writefds) != 0;
                         bool errored = FD_ISSET(s.sock, &exceptfds) != 0;
                         if (writable || errored)
@@ -426,7 +426,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
                     } else {
                         if (FD_ISSET(s.sock, &readfds))
                             HandleRecv(s, ctx);
-                        if (s.state < eSTATE_DISCONNECTED && FD_ISSET(s.sock, &writefds))
+                        if (s.state < SessionState::kDisconnected && FD_ISSET(s.sock, &writefds))
                             HandleSend(s, ctx);
                     }
                 }
@@ -438,10 +438,10 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
         for (int i = 0; i < ctx->sessionCount; i++) {
             ClientSession& s = ctx->sessions[i];
 
-            if (s.state == eSTATE_CONNECTED) {
+            if (s.state == SessionState::kConnected) {
                 int globalIdx = ctx->sessionStartIdx + i;
                 SendLoginPacket(s, ctx, globalIdx);
-            } else if (s.state == eSTATE_ACTIVE) {
+            } else if (s.state == SessionState::kActive) {
                 // 무작위 disconnect 시점 도달 — 끊김 (disconnectAt=0이면 비활성)
                 if (s.disconnectAt != 0 && now >= s.disconnectAt) {
                     MarkDisconnected(s, ctx);
@@ -455,7 +455,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
                         s.lastHeartbeat = now;
                     }
                 }
-            } else if (s.state == eSTATE_DISCONNECTED) {
+            } else if (s.state == SessionState::kDisconnected) {
                 if (s.sock != INVALID_SOCKET) {
                     closesocket(s.sock);
                     s.sock = INVALID_SOCKET;

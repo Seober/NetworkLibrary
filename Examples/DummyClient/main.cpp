@@ -108,7 +108,7 @@ int wmain(int argc, WCHAR* argv[]) {
     }
     for (int i = 0; i < N; i++) {
         sessions[i].sock = INVALID_SOCKET;
-        sessions[i].state = eSTATE_IDLE;
+        sessions[i].state = SessionState::kIdle;
     }
 
     // 공유 통계

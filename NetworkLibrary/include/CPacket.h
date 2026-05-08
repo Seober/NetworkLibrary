@@ -3,12 +3,10 @@
 
 class CPacket {
 public:
-    enum en_PACKET {
-        eBUFFER_DEFAULT = 1024,
-        eHEADER_DEFAULT = 20
-    };
+    static constexpr int kBufferDefault = 1024;
+    static constexpr int kHeaderDefault = 20;
 
-    CPacket(int BufferSize = eBUFFER_DEFAULT);
+    CPacket(int BufferSize = kBufferDefault);
     ~CPacket(void);
 
     void Release(void);
@@ -111,8 +109,8 @@ private:
 
 
 void CPacket::Clear(void) {
-    m_iFront = eHEADER_DEFAULT;
-    m_iRear = eHEADER_DEFAULT;
+    m_iFront = kHeaderDefault;
+    m_iRear = kHeaderDefault;
 
     EncodeFlag = false;
 }
