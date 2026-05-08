@@ -220,7 +220,7 @@ CNet_Server::~CNet_Server() {
     for (int i = 0; i < ThreadCnt; i++)
         CloseHandle(WorkerThread_[i]);
     delete[] WorkerThread_;
-    delete[] WorkerThread_ID;
+    delete[] WorkerThreadID;
 
     if (SessionCnt_Total)
         delete[] SessionArr;
