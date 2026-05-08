@@ -52,7 +52,7 @@ private:
 
     LogLevel Log_Level;
 
-    unsigned __int64 _LogCnt;
+    unsigned __int64 LogCnt_;
 
 
     static long Key_Singleton;

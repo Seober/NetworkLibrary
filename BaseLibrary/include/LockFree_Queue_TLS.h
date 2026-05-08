@@ -11,8 +11,8 @@ public:
 
 private:
     struct stNode {
-        T _Data = NULL;
-        stNode* pNext = NULL;
+        T Data = NULL;
+        stNode* Next = NULL;
         short RefCnt = 0;
         short DeleteFlag = 0;
 
@@ -43,7 +43,7 @@ private:
         }
 
         inline bool CAS_Next(unsigned __int64 Swap, unsigned __int64 Comp) {
-            PVOID retval = InterlockedCompareExchangePointer((PVOID*)&((stNode*)Bit.Index)->pNext,
+            PVOID retval = InterlockedCompareExchangePointer((PVOID*)&((stNode*)Bit.Index)->Next,
                                                              (PVOID)Swap, (PVOID)Comp);
             return retval == (PVOID)Comp;
         }
@@ -62,7 +62,7 @@ public:
 
     void Clear(void);
 
-    int GetUseSize(void) { return _Size; }
+    int GetUseSize(void) { return Size; }
 
     ////////////////////////////////////////////
     static int Log_GetTotalMemCnt(void) {
@@ -84,7 +84,7 @@ public:
 
 
 private:
-    inline WORD GetTagCnt(void) { return InterlockedIncrement16(&_TagCnt); }
+    inline WORD GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }
     inline stNode* AllocNode(void) {
         MemoryPool_TLS_Node<stNode>* pNodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(
             MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetTLSIndex());
@@ -107,11 +107,11 @@ private:
     }
 
 private:
-    stNode_TAGED _Head;
-    stNode_TAGED _Tail;
+    stNode_TAGED Head;
+    stNode_TAGED Tail;
 
-    long _Size;
-    short _TagCnt;
+    long Size;
+    short TagCnt;
 };
 
 
@@ -124,35 +124,35 @@ LockFree_Queue_TLS<T>::LockFree_Queue_TLS(void) {
         return;
     }
 
-    _Size = 0;
-    _TagCnt = 0;
+    Size = 0;
+    TagCnt = 0;
 
-    /*_Head = NodePool.Alloc();*/
-    _Head = AllocNode();
-    _Head->pNext = NULL;
-    _Head->IncrementRef();
-    _Tail = _Head;
+    /*Head = NodePool.Alloc();*/
+    Head = AllocNode();
+    Head->Next = NULL;
+    Head->IncrementRef();
+    Tail = Head;
 }
 
 template <typename T>
 void LockFree_Queue_TLS<T>::Enqueue(T data) {
     stNode_TAGED OldTail;
-    stNode_TAGED pNext;
+    stNode_TAGED Next;
     stNode_TAGED NewNode = AllocNode();
-    NewNode->_Data = data;
-    NewNode->pNext = NULL;
+    NewNode->Data = data;
+    NewNode->Next = NULL;
     NewNode->IncrementRef();
     NewNode.SetTag(GetTagCnt());
 
     while (1) {
-        OldTail = _Tail;
+        OldTail = Tail;
         OldTail->IncrementRef();
-        pNext = _Tail->pNext;
+        Next = Tail->Next;
 
-        if (OldTail == _Tail) {
-            if (pNext.Data == NULL) {
-                if (OldTail.CAS_Next(NewNode.Data, pNext.Data)) {
-                    _Tail.CAS(NewNode.Data, OldTail.Data);
+        if (OldTail == Tail) {
+            if (Next.Data == NULL) {
+                if (OldTail.CAS_Next(NewNode.Data, Next.Data)) {
+                    Tail.CAS(NewNode.Data, OldTail.Data);
 
                     if (OldTail->DecrementRef() == 0) {
                         if (InterlockedExchange16(&OldTail->DeleteFlag, 0) == 1)
@@ -161,7 +161,7 @@ void LockFree_Queue_TLS<T>::Enqueue(T data) {
                     break;
                 }
             } else
-                _Tail.CAS(pNext.Data, OldTail.Data);
+                Tail.CAS(Next.Data, OldTail.Data);
         }
 
         if (OldTail->DecrementRef() == 0) {
@@ -169,35 +169,35 @@ void LockFree_Queue_TLS<T>::Enqueue(T data) {
                 FreeNode(OldTail.GetPtr()); /*NodePool.Free(OldTail.GetPtr());*/
         }
     }
-    InterlockedExchangeAdd(&_Size, 1);
+    InterlockedExchangeAdd(&Size, 1);
 }
 
 
 template <typename T>
 bool LockFree_Queue_TLS<T>::Dequeue(T& tData) {
-    if (InterlockedExchangeAdd(&_Size, -1) <= 0) {
-        InterlockedExchangeAdd(&_Size, 1);
+    if (InterlockedExchangeAdd(&Size, -1) <= 0) {
+        InterlockedExchangeAdd(&Size, 1);
         tData = NULL;
         return false;
     }
 
     stNode_TAGED CurHead;
     stNode_TAGED CurTail;
-    stNode_TAGED pNext;
-    pNext.SetTag(GetTagCnt());
+    stNode_TAGED Next;
+    Next.SetTag(GetTagCnt());
 
     while (1) {
-        CurHead = _Head;
-        CurTail = _Tail;
+        CurHead = Head;
+        CurTail = Tail;
 
-        pNext = CurHead->pNext;
+        Next = CurHead->Next;
 
-        if (CurHead == _Head) {
+        if (CurHead == Head) {
             if (CurHead.GetPtr() == CurTail.GetPtr())
-                _Tail.CAS(pNext.Data, CurTail.Data);
+                Tail.CAS(Next.Data, CurTail.Data);
             else {
-                tData = pNext->_Data;
-                if (_Head.CAS(pNext.Data, CurHead.Data)) {
+                tData = Next->Data;
+                if (Head.CAS(Next.Data, CurHead.Data)) {
                     InterlockedExchange16(&CurHead->DeleteFlag, 1);
                     if (CurHead->DecrementRef() == 0) {
                         if (InterlockedExchange16(&CurHead->DeleteFlag, 0) == 1)
@@ -216,18 +216,18 @@ bool LockFree_Queue_TLS<T>::Dequeue(T& tData) {
 template <typename T>
 void LockFree_Queue_TLS<T>::Clear(void) {
     stNode_TAGED tmpHead;
-    stNode_TAGED pNext;
+    stNode_TAGED Next;
 
-    while (_Size) {
-        tmpHead = _Head;
-        pNext = tmpHead->pNext;
+    while (Size) {
+        tmpHead = Head;
+        Next = tmpHead->Next;
 
-        if (pNext == NULL)
+        if (Next == NULL)
             break;
 
-        _Head = pNext;
+        Head = Next;
         tmpHead->RefCnt = 0;
         FreeNode(tmpHead.GetPtr());
-        InterlockedExchangeAdd(&_Size, -1);
+        InterlockedExchangeAdd(&Size, -1);
     }
 }

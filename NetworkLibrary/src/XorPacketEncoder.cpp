@@ -2,7 +2,7 @@
 #include <cstdlib>  // rand
 
 XorPacketEncoder::XorPacketEncoder(BYTE headerCode, BYTE encryptKey, WORD maxPayloadLen)
-    : m_headerCode(headerCode), m_encryptKey(encryptKey), m_maxPayloadLen(maxPayloadLen) {}
+    : HeaderCode(headerCode), EncryptKey(encryptKey), MaxPayloadLen(maxPayloadLen) {}
 
 void XorPacketEncoder::Encode(CPacket& packet) {
     // idempotency: 이미 Encode된 packet은 다시 처리 안 함 (재전송 시나리오 보호)
@@ -18,7 +18,7 @@ void XorPacketEncoder::Encode(CPacket& packet) {
 
         packet.MoveReadPos(-(int)sizeof(NetHeader));
         NetHeader* pHeader = (NetHeader*)packet.GetReadBufferPtr();
-        pHeader->Code = m_headerCode;
+        pHeader->Code = HeaderCode;
         pHeader->Len = payloadSize;
         pHeader->RKey = (BYTE)(rand() % 256);
 
@@ -33,13 +33,13 @@ void XorPacketEncoder::Encode(CPacket& packet) {
 
         // 첫 byte (Checksum)
         P = *p ^ (RK + 1);
-        *p = P ^ (m_encryptKey + 1);
+        *p = P ^ (EncryptKey + 1);
         p++;
 
         // 페이로드 byte들
         for (int i = 2; i < payloadSize + 2; i++, p++) {
             P = *p ^ (P + RK + i);
-            *p = P ^ (*(p - 1) + m_encryptKey + i);
+            *p = P ^ (*(p - 1) + EncryptKey + i);
         }
     }
     packet.UnlockPacket();
@@ -56,8 +56,8 @@ bool XorPacketEncoder::Decode(CPacket& packet) {
 
     // 첫 루프 — encryptKey XOR 풀기 (역순)
     for (int i = pHeader->Len + 1; i > 1; i--, pTmp--)
-        *pTmp = *pTmp ^ (*(pTmp - 1) + m_encryptKey + i);
-    *pTmp = *pTmp ^ (m_encryptKey + 1);
+        *pTmp = *pTmp ^ (*(pTmp - 1) + EncryptKey + i);
+    *pTmp = *pTmp ^ (EncryptKey + 1);
 
     // 둘째 루프 — RKey XOR 풀기 + checksum 계산 (역순)
     pTmp = pRear;
@@ -81,13 +81,13 @@ std::size_t XorPacketEncoder::GetHeaderSize() const {
 
 bool XorPacketEncoder::VerifyHeaderMagic(const void* headerBytes) const {
     const NetHeader* pHeader = (const NetHeader*)headerBytes;
-    return pHeader->Code == m_headerCode;
+    return pHeader->Code == HeaderCode;
 }
 
 bool XorPacketEncoder::PeekPayloadLength(const void* headerBytes,
                                          std::size_t& outPayloadLen) const {
     const NetHeader* pHeader = (const NetHeader*)headerBytes;
-    if (m_maxPayloadLen != 0 && pHeader->Len > m_maxPayloadLen)
+    if (MaxPayloadLen != 0 && pHeader->Len > MaxPayloadLen)
         return false;
     outPayloadLen = pHeader->Len;
     return true;

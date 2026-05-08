@@ -20,7 +20,7 @@ public:
     struct stSESSION {
         bool SessionUseFlag;
         alignas(16) volatile LONG64 ReleaseArr[2];
-        unsigned __int64 SessionID;
+        unsigned __int64 SessionID_;
 
         char LastAction;
 
@@ -30,8 +30,8 @@ public:
         OVERLAPPED SendOverlapped;
         OVERLAPPED RecvOverlapped;
 
-        volatile DWORD dwSendFlag;
-        DWORD dwSendPacketCnt;
+        volatile DWORD SendFlag;
+        DWORD SendPacketCnt;
 
         LockFree_Queue_TLS<CPacket*> SendQ;
         CPacket RecvQ{4096};
@@ -70,7 +70,7 @@ public:
 
     /*SOCKET GetListenSocket() { return ListenSocket; }*/
     unsigned __int64 GetSessionID_New() { return ++SessionID_Cnt; }
-    /*HANDLE GetIOCPHandle() { return h_IOCP; }*/
+    /*HANDLE GetIOCPHandle() { return IOCP; }*/
 
     bool SendPost(stSESSION* pSession, DWORD Flag = 0);
     bool RecvPost(stSESSION* pSession, DWORD Flag = 0);
@@ -82,40 +82,40 @@ public:
     bool GetPacketMessage(CPacket* pPacket, CPacket* pRecvQ);
 
     ////////////////////////////////////////////////////////////////////////////////
-    int Log_GetPacketPoolTotal(void) { return pPacketPool->GetTotalMemCnt(); }
-    int Log_GetPacketPoolUse(void) { return pPacketPool->GetUseMemCnt(); }
-    int Log_GetPacketPoolFree(void) { return pPacketPool->GetFreeMemCnt(); }
+    int Log_GetPacketPoolTotal(void) { return PacketPool->GetTotalMemCnt(); }
+    int Log_GetPacketPoolUse(void) { return PacketPool->GetUseMemCnt(); }
+    int Log_GetPacketPoolFree(void) { return PacketPool->GetFreeMemCnt(); }
 
-    int GetStackSize(void) { return pPacketPool->GetStackSize(); }
-    int GetPoolCnt_Total(void) { return pPacketPool->GetPoolCnt_Total(); }
-    int GetPoolCnt_Use(void) { return pPacketPool->GetPoolCnt_Use(); }
-    int GetPoolCnt_Free(void) { return pPacketPool->GetPoolCnt_Free(); }
+    int GetStackSize(void) { return PacketPool->GetStackSize(); }
+    int GetPoolCnt_Total(void) { return PacketPool->GetPoolCnt_Total(); }
+    int GetPoolCnt_Use(void) { return PacketPool->GetPoolCnt_Use(); }
+    int GetPoolCnt_Free(void) { return PacketPool->GetPoolCnt_Free(); }
 
     void AddRecvBytes(DWORD dwRecvBytes);
     void AddRecvPacket(void);
-    void AddSend(DWORD dwSendPacketCnt, DWORD dwSendBytes);
+    void AddSend(DWORD SendPacketCnt, DWORD dwSendBytes);
 
     void GetTransmit(DWORD* TransmitBuffer);
 
     void AddAcceptCnt(void) {
-        InterlockedExchangeAdd(&_AcceptTotal, 1);
-        InterlockedExchangeAdd(&_AcceptTPS, 1);
+        InterlockedExchangeAdd(&AcceptTotal, 1);
+        InterlockedExchangeAdd(&AcceptTPS, 1);
     }
 
-    unsigned __int64 GetAcceptTotal(void) { return _AcceptTotal; }
-    DWORD GetAcceptTPS(void) { return InterlockedExchange(&_AcceptTPS, 0); }
+    unsigned __int64 GetAcceptTotal(void) { return AcceptTotal; }
+    DWORD GetAcceptTPS(void) { return InterlockedExchange(&AcceptTPS, 0); }
 
 private:
     void ReleaseSession(stSESSION* pSession);
     void initSession(stSESSION* pSession);
 
-    // thread_local 캐시로 _LogTransmit_Map 접근 — find/insert race 회피
+    // thread_local 캐시로 LogTransmit_Map 접근 — find/insert race 회피
     // 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
     DWORD* GetThreadTransmitArr(void);
 
 
 private:
-    HANDLE h_IOCP;
+    HANDLE IOCP;
     SOCKET ListenSocket;
     unsigned __int64 SessionID_Cnt;
 
@@ -123,24 +123,24 @@ private:
     u_short SessionCnt_Total;
 
 
-    DWORD dwAcceptThreadID;
-    HANDLE hAcceptThread;
+    DWORD AcceptThreadID;
+    HANDLE AcceptThread;
 
-    DWORD* dwWorkerThreadID;
-    HANDLE* hWorkerThread;
+    DWORD* WorkerThreadID;
+    HANDLE* WorkerThread;
 
     u_short ThreadCnt;
 
-    alignas(64) unsigned __int64 _AcceptTotal;
-    DWORD _AcceptTPS;
+    alignas(64) unsigned __int64 AcceptTotal;
+    DWORD AcceptTPS;
 
-    MemoryPool_TLS_Chunck<CPacket>* pPacketPool;
+    MemoryPool_TLS_Chunck<CPacket>* PacketPool;
     LockFree_Stack<stSESSION*> FreeSessionStack;
 
     SRWLOCK srwLogTransmitMap;
     std::unordered_map<DWORD, DWORD*>
-        _LogTransmit_Map;  // Value 0 : RecvTPS, Value 1 : RecvBytes, Value 2 : SendTPS, Value 3 : SendBytes
+        LogTransmit_Map;  // Value 0 : RecvTPS, Value 1 : RecvBytes, Value 2 : SendTPS, Value 3 : SendBytes
 
-    IPacketEncoder* m_encoder;
-    bool m_ownsEncoder;
+    IPacketEncoder* Encoder;
+    bool OwnsEncoder;
 };

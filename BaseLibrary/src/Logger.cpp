@@ -7,13 +7,13 @@ Logger* Logger::pLogger = NULL;
 
 Logger::Logger() {
     Log_Level = LogLevel::kDebug;
-    _LogCnt = 0;
+    LogCnt_ = 0;
 }
 
 
 void Logger::Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringFormat, ...) {
     if (Log_Level <= level) {
-        unsigned __int64 LogCnt = InterlockedIncrement(&_LogCnt);
+        unsigned __int64 LogCnt = InterlockedIncrement(&LogCnt_);
 
         int retval_FileName;
         int retval_LogTag;

@@ -43,7 +43,7 @@ private:
     static_assert(sizeof(NetHeader) <= CPacket::kHeaderDefault,
                   "XorPacketEncoder NetHeader exceeds CPacket reserve space (kHeaderDefault)");
 
-    BYTE m_headerCode;
-    BYTE m_encryptKey;
-    WORD m_maxPayloadLen;
+    BYTE HeaderCode;
+    BYTE EncryptKey;
+    WORD MaxPayloadLen;
 };

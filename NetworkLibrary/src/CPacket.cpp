@@ -4,20 +4,20 @@
 
 
 CPacket::CPacket(int BufSize) {
-    m_iRefCnt = 0;
-    m_iBufferSize = BufSize;
-    m_iFront = 0;
-    m_iRear = 0;
+    RefCnt = 0;
+    BufferSize = BufSize;
+    Front = 0;
+    Rear = 0;
 
 
-    cBuffer = new char[m_iBufferSize];
+    Buffer = new char[BufferSize];
 
     InitializeSRWLock(&srw_Encode);
     EncodeFlag = false;
 }
 
 CPacket::~CPacket(void) {
-    delete cBuffer;
+    delete Buffer;
 }
 
 void CPacket::Release(void) {}

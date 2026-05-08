@@ -132,39 +132,39 @@ public:
     struct stNode {
         PadType Pad_UnderFlow = kPadUnderflow;
         T Data;
-        stNode* pNext = NULL;
+        stNode* Next = NULL;
         PadType Pad_OverFlow = kPadOverflow;
     };
 
     MemoryPool_TLS_Node() {
         ChunckPool = MemoryPool_TLS_Chunck<T>::GetInstance();
-        _Head = NULL;
-        _iFreeNodeCnt = 0;
-        _iChunckSize = ChunckPool->GetChunckSize();
+        Head = NULL;
+        FreeNodeCnt = 0;
+        ChunckSize = ChunckPool->GetChunckSize();
     }
 
     ~MemoryPool_TLS_Node() {
-        while (_Head != NULL) {
-            stNode* pNext = _Head->pNext;
-            delete _Head;
-            _Head = pNext;
+        while (Head != NULL) {
+            stNode* Next = Head->Next;
+            delete Head;
+            Head = Next;
         }
-        _iFreeNodeCnt = 0;
+        FreeNodeCnt = 0;
     }
 
     void SetTLS(void) { TlsSetValue(ChunckPool->GetTLSIndex(), this); }
 
     T* Alloc() {
-        if (_iFreeNodeCnt == 0) {
-            _Head = (stNode*)ChunckPool->AllocChunck();
-            if (_Head == NULL)
-                _Head = NewNodeList();
-            _iFreeNodeCnt += _iChunckSize;
+        if (FreeNodeCnt == 0) {
+            Head = (stNode*)ChunckPool->AllocChunck();
+            if (Head == NULL)
+                Head = NewNodeList();
+            FreeNodeCnt += ChunckSize;
         }
 
-        stNode* pNode = _Head;
-        _Head = _Head->pNext;
-        _iFreeNodeCnt--;
+        stNode* pNode = Head;
+        Head = Head->Next;
+        FreeNodeCnt--;
 
         return &pNode->Data;
     }
@@ -177,24 +177,24 @@ public:
             *Err_Make = 10;
         }
 
-        pNode->pNext = _Head;
-        _Head = pNode;
-        if (++_iFreeNodeCnt >= _iChunckSize) {
-            for (int i = 0; i < _iChunckSize; i++)
-                _Head = _Head->pNext;
-            _iFreeNodeCnt -= _iChunckSize;
+        pNode->Next = Head;
+        Head = pNode;
+        if (++FreeNodeCnt >= ChunckSize) {
+            for (int i = 0; i < ChunckSize; i++)
+                Head = Head->Next;
+            FreeNodeCnt -= ChunckSize;
             ChunckPool->FreeChunck(pNode);
         }
     }
 
 private:
     stNode* NewNodeList() {
-        stNode* pHead = _Head;
+        stNode* pHead = Head;
 
-        for (int i = 0; i < _iChunckSize; i++) {
+        for (int i = 0; i < ChunckSize; i++) {
             stNode* pNewNode = new stNode;
 
-            pNewNode->pNext = pHead;
+            pNewNode->Next = pHead;
             pHead = pNewNode;
         }
 
@@ -204,8 +204,8 @@ private:
 private:
     MemoryPool_TLS_Chunck<T>* ChunckPool;
 
-    stNode* _Head;
+    stNode* Head;
 
-    int _iFreeNodeCnt;
-    int _iChunckSize;
+    int FreeNodeCnt;
+    int ChunckSize;
 };

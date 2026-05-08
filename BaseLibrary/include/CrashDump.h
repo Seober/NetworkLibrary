@@ -27,7 +27,7 @@ public:
 
     static void myPurecallHandler(void) { Crash(); }
 
-    static long _DumpCount;
+    static long DumpCount;
 };
 
 

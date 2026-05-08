@@ -10,8 +10,8 @@ public:
     static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
 
     struct stNode {
-        T _Data = NULL;
-        stNode* pNext = NULL;
+        T Data = NULL;
+        stNode* Next = NULL;
     };
 
     struct BitField {
@@ -47,7 +47,7 @@ public:
     bool Pop(T& tData);
     T Pop(void);
 
-    inline unsigned int GetUseSize(void) { return _Size; }
+    inline unsigned int GetUseSize(void) { return Size; }
 
     inline int GetTotalPool(void) { return NodePool.GetTotalMemCnt(); }
     inline int GetUsePool(void) { return NodePool.GetUseMemCnt(); }
@@ -57,19 +57,19 @@ public:
 private:
     inline short GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }
 
-    stNode_TAGED _Top;
+    stNode_TAGED Top;
 
     MemoryPool_LF<stNode> NodePool;
 
 
-    alignas(64) long _Size;
+    alignas(64) long Size;
     alignas(64) short TagCnt;
 };
 
 
 template <typename T>
 LockFree_Stack<T>::LockFree_Stack(void) {
-    _Size = 0;
+    Size = 0;
     TagCnt = 0;
 
     SYSTEM_INFO SystemInfo;
@@ -86,15 +86,15 @@ void LockFree_Stack<T>::Push(T tData) {
     stNode_TAGED OldTop;
     stNode_TAGED NewTop = NodePool.Alloc();
     NewTop.SetTag(GetTagCnt());
-    NewTop->_Data = tData;
+    NewTop->Data = tData;
 
     do {
-        OldTop = _Top;
-        NewTop->pNext = OldTop.GetPtr();
+        OldTop = Top;
+        NewTop->Next = OldTop.GetPtr();
 
-    } while (!_Top.CAS(NewTop.Data, OldTop.Data));
+    } while (!Top.CAS(NewTop.Data, OldTop.Data));
 
-    InterlockedExchangeAdd(&_Size, 1);
+    InterlockedExchangeAdd(&Size, 1);
 }
 
 
@@ -104,17 +104,17 @@ T LockFree_Stack<T>::Pop(void) {
     stNode_TAGED NewTop;
     NewTop.SetTag(GetTagCnt());
 
-    if (InterlockedExchangeAdd(&_Size, -1) <= 0) {
-        InterlockedExchangeAdd(&_Size, 1);
+    if (InterlockedExchangeAdd(&Size, -1) <= 0) {
+        InterlockedExchangeAdd(&Size, 1);
         return NULL;
     }
     do {
-        OldTop = _Top;
-        NewTop = OldTop->pNext;
+        OldTop = Top;
+        NewTop = OldTop->Next;
 
-    } while (!_Top.CAS(NewTop.Data, OldTop.Data));
+    } while (!Top.CAS(NewTop.Data, OldTop.Data));
 
-    T returnData = OldTop->_Data;
+    T returnData = OldTop->Data;
     NodePool.Free(OldTop.GetPtr());
 
     return returnData;
@@ -127,18 +127,18 @@ bool LockFree_Stack<T>::Pop(T& tData) {
     stNode_TAGED NewTop;
     NewTop.SetTag(GetTagCnt());
 
-    if (InterlockedExchangeAdd(&_Size, -1) <= 0) {
-        InterlockedExchangeAdd(&_Size, 1);
+    if (InterlockedExchangeAdd(&Size, -1) <= 0) {
+        InterlockedExchangeAdd(&Size, 1);
         tData = NULL;
         return false;
     }
     do {
-        OldTop = _Top;
-        NewTop = OldTop->pNext;
+        OldTop = Top;
+        NewTop = OldTop->Next;
 
-    } while (!_Top.CAS(NewTop.Data, OldTop.Data));
+    } while (!Top.CAS(NewTop.Data, OldTop.Data));
 
-    tData = OldTop->_Data;
+    tData = OldTop->Data;
     NodePool.Free(OldTop.GetPtr());
 
     return true;
