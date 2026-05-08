@@ -66,7 +66,7 @@ public:
     virtual bool OnConnectionRequest() = 0;
     virtual void OnClientJoin(unsigned __int64 SessionID) = 0;
     virtual void OnClientLeave(unsigned __int64 SessionID) = 0;
-    virtual void OnRecv(unsigned __int64 SesisonID, CPacket* pPacket) = 0;
+    virtual void OnRecv(unsigned __int64 SessionID, CPacket* pPacket) = 0;
 
     /*SOCKET GetListenSocket() { return ListenSocket; }*/
     unsigned __int64 GetSessionID_New() { return ++SessionID_Cnt; }
