@@ -202,10 +202,10 @@ CNet_Server::CNet_Server(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncode
     SessionID_Cnt = 0;
 
     AcceptThreadID = 0;
-    AcceptThread = NULL;
+    AcceptThread_ = NULL;
 
     WorkerThreadID = NULL;
-    WorkerThread = NULL;
+    WorkerThread_ = NULL;
     ThreadCnt = 0;
 
     AcceptTotal = 0;
@@ -218,14 +218,14 @@ CNet_Server::CNet_Server(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncode
 
 CNet_Server::~CNet_Server() {
     for (int i = 0; i < ThreadCnt; i++)
-        CloseHandle(WorkerThread[i]);
-    delete[] WorkerThread;
-    delete[] WorkerThreadID;
+        CloseHandle(WorkerThread_[i]);
+    delete[] WorkerThread_;
+    delete[] WorkerThread_ID;
 
     if (SessionCnt_Total)
         delete[] SessionArr;
 
-    CloseHandle(AcceptThread);
+    CloseHandle(AcceptThread_);
 
     closesocket(ListenSocket);
 
@@ -301,19 +301,19 @@ bool CNet_Server::Start(const WCHAR* ServerIP, u_short ServerPort, u_short Worke
         FreeSessionStack.Push(&SessionArr[init_SessionArr]);
     }
 
-    AcceptThread = (HANDLE)_beginthreadex(NULL, 0, AcceptThread, (LPVOID)this, 0,
+    AcceptThread_ = (HANDLE)_beginthreadex(NULL, 0, AcceptThread, (LPVOID)this, 0,
                                            (unsigned int*)&AcceptThreadID);
-    if (AcceptThread == NULL)
+    if (AcceptThread_ == NULL)
         return false;
 
     ThreadCnt = WorkerThreadCnt_Total;
     WorkerThreadID = new DWORD[ThreadCnt];
-    WorkerThread = new HANDLE[ThreadCnt];
+    WorkerThread_ = new HANDLE[ThreadCnt];
 
     for (int i = 0; i < ThreadCnt; i++) {
-        WorkerThread[i] = (HANDLE)_beginthreadex(NULL, 0, WorkerThread, (LPVOID)this, 0,
+        WorkerThread_[i] = (HANDLE)_beginthreadex(NULL, 0, WorkerThread, (LPVOID)this, 0,
                                                   (unsigned int*)&WorkerThreadID[i]);
-        if (WorkerThread[i] == NULL)
+        if (WorkerThread_[i] == NULL)
             return false;
     }
 

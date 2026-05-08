@@ -124,10 +124,10 @@ private:
 
 
     DWORD AcceptThreadID;
-    HANDLE AcceptThread;
+    HANDLE AcceptThread_;
 
     DWORD* WorkerThreadID;
-    HANDLE* WorkerThread;
+    HANDLE* WorkerThread_;
 
     u_short ThreadCnt;
 
