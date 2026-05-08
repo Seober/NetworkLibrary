@@ -4,16 +4,11 @@
 
 #include "MemoryPool_LF.h"
 
-#define LOCKFREE_STACK_VERSION 0.1
-#define LOCKFREE_STACK_PAD_TYPE unsigned __int64
-#define LOCKFREE_STACK_PAD_UNDERFLOW 0xdfdfdfdfdfdfdfdf
-#define LOCKFREE_STACK_PAD_OVERFLOW 0xefefefefefefefef
-
-#define MAXIMUM_MEMORY_RANGE 0x00007ffffffeffff
-
 template <typename T>
 class LockFree_Stack {
 public:
+    static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
+
     struct stNode {
         T _Data = NULL;
         stNode* pNext = NULL;
@@ -79,8 +74,8 @@ LockFree_Stack<T>::LockFree_Stack(void) {
 
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
-    if (SystemInfo.lpMaximumApplicationAddress != (void*)MAXIMUM_MEMORY_RANGE) {
-        wprintf(L"LockFree_Stack Version need Update\nNow Version : %f\n", LOCKFREE_STACK_VERSION);
+    if (SystemInfo.lpMaximumApplicationAddress != (void*)kMaxMemoryRange) {
+        wprintf(L"LockFree_Stack: user-space memory range mismatch (47-bit pointer encoding may break)\n");
         return;
     }
 }

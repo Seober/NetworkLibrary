@@ -98,7 +98,7 @@ Monitoring_Tool::Monitoring_Tool(HANDLE hProcess) {
     iCnt = 0;
     szCur = szInterfaces;
 
-    for (; *szCur != L'\0' && iCnt < df_PDH_ETHERNET_MAX; szCur += wcslen(szCur) + 1, iCnt++) {
+    for (; *szCur != L'\0' && iCnt < kPdhEthernetMax; szCur += wcslen(szCur) + 1, iCnt++) {
         _EthernetStruct[iCnt]._bUse = true;
         _EthernetStruct[iCnt]._szName[0] = L'\0';
         wcscpy_s(_EthernetStruct[iCnt]._szName, szCur);
@@ -215,7 +215,7 @@ void Monitoring_Tool::UpdateQuery() {
     _lNonPagedMemory = CounterVal.longValue;
 
     /////////////////////////////////////////////
-    for (int iCnt = 0; iCnt < df_PDH_ETHERNET_MAX; iCnt++) {
+    for (int iCnt = 0; iCnt < kPdhEthernetMax; iCnt++) {
         if (_EthernetStruct[iCnt]._bUse) {
             if (PdhGetFormattedCounterValue(_EthernetStruct[iCnt]._pdh_Counter_Network_RecvBytes,
                                             PDH_FMT_DOUBLE, NULL, &CounterVal) == ERROR_SUCCESS)

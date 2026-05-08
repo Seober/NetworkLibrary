@@ -2,23 +2,21 @@
 
 #include <windows.h>
 
-#define MEMORYPOOL_LF_VERSION 0.1
-#define MEMORYPOOL_LF_PAD_TYPE unsigned __int64
-#define MEMORYPOOL_LF_PAD_UNDERFLOW 0xdfdfdfdfdfdfdfdf
-#define MEMORYPOOL_LF_PAD_OVERFLOW 0xefefefefefefefef
-
-#define MAXIMUM_MEMORY_RANGE 0x00007ffffffeffff
-
 template <typename T>
 class MemoryPool_LF {
 public:
     static constexpr int kDefaultPool = 300;
+    static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
+
+    using PadType = unsigned __int64;
+    static constexpr PadType kPadUnderflow = 0xdfdfdfdfdfdfdfdf;
+    static constexpr PadType kPadOverflow = 0xefefefefefefefef;
 
     struct stNode {  //abcdef
-        MEMORYPOOL_LF_PAD_TYPE Pad_UnderFlow = MEMORYPOOL_LF_PAD_UNDERFLOW;
+        PadType Pad_UnderFlow = kPadUnderflow;
         T Data;
         stNode* pNext = NULL;
-        MEMORYPOOL_LF_PAD_TYPE Pad_OverFlow = MEMORYPOOL_LF_PAD_OVERFLOW;
+        PadType Pad_OverFlow = kPadOverflow;
     };
 
     struct BitField {
@@ -108,8 +106,8 @@ template <typename T>
 MemoryPool_LF<T>::MemoryPool_LF(int initSize) {
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
-    if (SystemInfo.lpMaximumApplicationAddress != (PVOID)MAXIMUM_MEMORY_RANGE) {
-        wprintf(L"LockFree_Stack Version need Update\nNow Version : %f\n", MEMORYPOOL_LF_VERSION);
+    if (SystemInfo.lpMaximumApplicationAddress != (PVOID)kMaxMemoryRange) {
+        wprintf(L"MemoryPool_LF: user-space memory range mismatch (47-bit pointer encoding may break)\n");
         return;
     }
 
@@ -163,9 +161,9 @@ T* MemoryPool_LF<T>::Alloc(void) {
 
 template <typename T>
 void MemoryPool_LF<T>::Free(T* pTarget) {
-    stNode* pNode = (stNode*)((char*)pTarget - sizeof(MEMORYPOOL_LF_PAD_TYPE));
-    if (pNode->Pad_UnderFlow != MEMORYPOOL_LF_PAD_UNDERFLOW ||
-        pNode->Pad_OverFlow != MEMORYPOOL_LF_PAD_OVERFLOW) {
+    stNode* pNode = (stNode*)((char*)pTarget - sizeof(PadType));
+    if (pNode->Pad_UnderFlow != kPadUnderflow ||
+        pNode->Pad_OverFlow != kPadOverflow) {
         char* Err_Make = NULL;
         *Err_Make = 10;
     }

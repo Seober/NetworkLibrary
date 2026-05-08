@@ -1,12 +1,12 @@
 ﻿#pragma once
 #include "CrashDump.h"
 
-#define df_LOG_BUFSIZE_FILENAME 64
-#define df_LOG_BUFSIZE_LOGTAG 128
-#define df_LOG_BUFSIZE_LOGMESSAGE 256
-
 class Logger {
 public:
+    static constexpr int kBufsizeFilename = 64;
+    static constexpr int kBufsizeLogTag = 128;
+    static constexpr int kBufsizeLogMessage = 256;
+
     enum class LogLevel {
         kDebug,
         kError,

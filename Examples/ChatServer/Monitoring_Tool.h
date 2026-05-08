@@ -2,10 +2,10 @@
 #pragma comment(lib, "Pdh.lib")
 #include <Pdh.h>
 
-#define df_PDH_ETHERNET_MAX 8
-
 class Monitoring_Tool {
 public:
+    static constexpr int kPdhEthernetMax = 8;
+
     struct st_ETHERNET {
         bool _bUse;
         WCHAR _szName[128];
@@ -89,7 +89,7 @@ private:
     long _lNonPagedMemory;
 
 
-    st_ETHERNET _EthernetStruct[df_PDH_ETHERNET_MAX];
+    st_ETHERNET _EthernetStruct[kPdhEthernetMax];
     double _pdh_value_Network_RecvBytes;
     double _pdh_value_Network_SendBytes;
 };

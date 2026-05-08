@@ -4,12 +4,11 @@
 #include "MemoryPool_TLS.h"
 //#define LFQ_DEBUG
 
-#define LOCKFREE_QUEUE_VERSION 0.1
-
-#define MAXIMUM_MEMORY_RANGE 0x00007ffffffeffff
-
 template <typename T>
 class LockFree_Queue_TLS {
+public:
+    static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
+
 private:
     struct stNode {
         T _Data = NULL;
@@ -120,8 +119,8 @@ template <typename T>
 LockFree_Queue_TLS<T>::LockFree_Queue_TLS(void) {
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
-    if (SystemInfo.lpMaximumApplicationAddress != (void*)MAXIMUM_MEMORY_RANGE) {
-        wprintf(L"LockFree_Stack Version need Update\nNow Version : %f\n", LOCKFREE_STACK_VERSION);
+    if (SystemInfo.lpMaximumApplicationAddress != (void*)kMaxMemoryRange) {
+        wprintf(L"LockFree_Queue_TLS: user-space memory range mismatch (47-bit pointer encoding may break)\n");
         return;
     }
 

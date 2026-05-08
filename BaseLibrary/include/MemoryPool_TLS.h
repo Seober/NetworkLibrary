@@ -3,11 +3,6 @@
 #include "LockFree_Stack.h"
 #include "MemoryPool_LF.h"
 
-#define MEMORYPOOL_TLS_VERSION 0.1
-#define MEMORYPOOL_TLS_PAD_TYPE unsigned __int64
-#define MEMORYPOOL_TLS_PAD_UNDERFLOW 0xdfdfdfdfdfdfdfdf
-#define MEMORYPOOL_TLS_PAD_OVERFLOW 0xefefefefefefefef
-
 template <typename T>
 class MemoryPool_TLS_Chunck {
 public:
@@ -130,11 +125,15 @@ long MemoryPool_TLS_Chunck<T>::Key_Singleton = 0;
 template <typename T>
 class MemoryPool_TLS_Node {
 public:
+    using PadType = unsigned __int64;
+    static constexpr PadType kPadUnderflow = 0xdfdfdfdfdfdfdfdf;
+    static constexpr PadType kPadOverflow = 0xefefefefefefefef;
+
     struct stNode {
-        MEMORYPOOL_TLS_PAD_TYPE Pad_UnderFlow = MEMORYPOOL_TLS_PAD_UNDERFLOW;
+        PadType Pad_UnderFlow = kPadUnderflow;
         T Data;
         stNode* pNext = NULL;
-        MEMORYPOOL_TLS_PAD_TYPE Pad_OverFlow = MEMORYPOOL_TLS_PAD_OVERFLOW;
+        PadType Pad_OverFlow = kPadOverflow;
     };
 
     MemoryPool_TLS_Node() {
@@ -171,9 +170,9 @@ public:
     }
 
     void Free(T* pTarget) {
-        stNode* pNode = (stNode*)((char*)pTarget - sizeof(MEMORYPOOL_TLS_PAD_TYPE));
-        if (pNode->Pad_UnderFlow != MEMORYPOOL_TLS_PAD_UNDERFLOW ||
-            pNode->Pad_OverFlow != MEMORYPOOL_TLS_PAD_OVERFLOW) {
+        stNode* pNode = (stNode*)((char*)pTarget - sizeof(PadType));
+        if (pNode->Pad_UnderFlow != kPadUnderflow ||
+            pNode->Pad_OverFlow != kPadOverflow) {
             char* Err_Make = NULL;
             *Err_Make = 10;
         }

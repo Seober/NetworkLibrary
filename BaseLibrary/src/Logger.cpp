@@ -19,21 +19,21 @@ void Logger::Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringForma
         int retval_LogTag;
         int retval_LogMessage;
 
-        WCHAR szFileName[df_LOG_BUFSIZE_FILENAME];
-        WCHAR szLogTag[df_LOG_BUFSIZE_LOGTAG];
-        WCHAR szLogMessage[df_LOG_BUFSIZE_LOGMESSAGE];
+        WCHAR szFileName[kBufsizeFilename];
+        WCHAR szLogTag[kBufsizeLogTag];
+        WCHAR szLogMessage[kBufsizeLogMessage];
 
         //Setting Log_FileName
         SYSTEMTIME stNowTime;
         GetLocalTime(&stNowTime);
-        retval_FileName = StringCchPrintf(szFileName, df_LOG_BUFSIZE_FILENAME, L"%hd%02hd_%s.txt",
+        retval_FileName = StringCchPrintf(szFileName, kBufsizeFilename, L"%hd%02hd_%s.txt",
                                           stNowTime.wYear, stNowTime.wMonth, szType);
 
         //Setting Log_Tag
         switch (level) {
             case LogLevel::kDebug:
                 retval_LogTag = StringCchPrintf(
-                    szLogTag, df_LOG_BUFSIZE_LOGTAG,
+                    szLogTag, kBufsizeLogTag,
                     L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / DEBUG] [%08I64u] ", szType,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, LogCnt);
@@ -41,7 +41,7 @@ void Logger::Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringForma
 
             case LogLevel::kError:
                 retval_LogTag = StringCchPrintf(
-                    szLogTag, df_LOG_BUFSIZE_LOGTAG,
+                    szLogTag, kBufsizeLogTag,
                     L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / ERROR] [%08I64u] ", szType,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, LogCnt);
@@ -49,14 +49,14 @@ void Logger::Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringForma
 
             case LogLevel::kSystem:
                 retval_LogTag = StringCchPrintf(
-                    szLogTag, df_LOG_BUFSIZE_LOGTAG,
+                    szLogTag, kBufsizeLogTag,
                     L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / SYSTEM] [%08I64u] ", szType,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, LogCnt);
                 break;
             default:
                 retval_LogTag = StringCchPrintf(
-                    szLogTag, df_LOG_BUFSIZE_LOGTAG,
+                    szLogTag, kBufsizeLogTag,
                     L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / OutOfRange] [%08I64u] ", szType,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, LogCnt);
@@ -67,7 +67,7 @@ void Logger::Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringForma
         va_list va;
         va_start(va, szStringFormat);
         retval_LogMessage =
-            StringCchVPrintf(szLogMessage, df_LOG_BUFSIZE_LOGMESSAGE, szStringFormat, va);
+            StringCchVPrintf(szLogMessage, kBufsizeLogMessage, szStringFormat, va);
         va_end(va);
 
 

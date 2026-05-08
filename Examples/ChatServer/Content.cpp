@@ -4,8 +4,8 @@
 
 #include "LockFree_Queue_TLS.h"
 
-#define dfMESSAGEBUFSIZE 1000
-WCHAR MessageBuf[dfMESSAGEBUFSIZE];
+constexpr int kMessageBufsize = 1000;
+WCHAR MessageBuf[kMessageBufsize];
 
 Chat_Server::Chat_Server(int MaxUser, bool HeartBeatFlag) {
     hContentThread = INVALID_HANDLE_VALUE;
@@ -38,12 +38,12 @@ bool Chat_Server::OnConnectionRequest() {
 }
 
 void Chat_Server::OnClientJoin(unsigned __int64 SessionID) {
-    stJob* pJob = AllocJob(dfJOBTYPE_JOIN, SessionID, NULL);
+    stJob* pJob = AllocJob(JobType::kJoin, SessionID, NULL);
     JobQueue.Enqueue(pJob);
     SetEvent(hJobEvent);
 }
 void Chat_Server::OnClientLeave(unsigned __int64 SessionID) {
-    stJob* pJob = AllocJob(dfJOBTYPE_LEAVE, SessionID, NULL);
+    stJob* pJob = AllocJob(JobType::kLeave, SessionID, NULL);
     JobQueue.Enqueue(pJob);
     SetEvent(hJobEvent);
 }
@@ -51,7 +51,7 @@ void Chat_Server::OnClientLeave(unsigned __int64 SessionID) {
 
 void Chat_Server::OnRecv(unsigned __int64 SessionID, CPacket* pPacket) {
     pPacket->IncrementRef();
-    stJob* pJob = AllocJob(dfJOBTYPE_MESSAGE, SessionID, pPacket);
+    stJob* pJob = AllocJob(JobType::kMessage, SessionID, pPacket);
     JobQueue.Enqueue(pJob);
     SetEvent(hJobEvent);
 }
@@ -61,7 +61,7 @@ unsigned WINAPI Chat_Server::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
     stJob* pJob;
 
     while (1) {
-        pJob = pServer->AllocJob(dfJOBTYPE_HEARTBEAT, NULL, NULL);
+        pJob = pServer->AllocJob(JobType::kHeartbeat, NULL, NULL);
         pServer->JobQueue.Enqueue(pJob);
         SetEvent(pServer->hJobEvent);
 
@@ -80,25 +80,25 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
         if (pServer->JobQueue.Dequeue(pJob)) {
             InterlockedIncrement(&pServer->_JobTPS);
 
-            switch (pJob->JobType) {
-                case dfJOBTYPE_MESSAGE:
+            switch (pJob->type) {
+                case JobType::kMessage:
                     pServer->MessageControl(pJob->SessionID, pJob->pPacket);
                     break;
 
-                case dfJOBTYPE_JOIN:
+                case JobType::kJoin:
                     pServer->CreateCharacter(pJob->SessionID);
                     break;
 
-                case dfJOBTYPE_LEAVE:
+                case JobType::kLeave:
                     pServer->LeaveCharacter(pJob->SessionID);
                     break;
 
-                case dfJOBTYPE_HEARTBEAT:
+                case JobType::kHeartbeat:
                     pServer->CheckHeartBeat();
                     break;
                 default:
                     pServer->pLogger->Log(L"Content", Logger::LogLevel::kError,
-                                          L"JobType:%d", pJob->JobType);
+                                          L"JobType:%d", pJob->type);
                     pServer->pLogger->Crash();
                     break;
             }
@@ -183,8 +183,8 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
             }
 
             //Sector 변경 시 리스트에서 Pop, Push 필요
-            if (SectorX >= 0 && SectorX < dfSECTOR_X_MAX && SectorY >= 0 &&
-                SectorY < dfSECTOR_Y_MAX) {
+            if (SectorX >= 0 && SectorX < kSectorXMax && SectorY >= 0 &&
+                SectorY < kSectorYMax) {
                 if (pCharacter->SectorX !=
                     -1)  // 기존에 섹터에 들어가있는경우 <> 로그인만 진행한 경우 -1로 초기화
                 {
@@ -229,7 +229,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
                 break;
             }
 
-            if (MessageLen >= dfMESSAGEBUFSIZE) {
+            if (MessageLen >= kMessageBufsize) {
                 pLogger->Log(L"ASDF", Logger::LogLevel::kError, L"Message Len:%d",
                              MessageLen);
                 pLogger->Crash();
@@ -339,11 +339,11 @@ void Chat_Server::SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket)
     iSectorY--;
 
     for (iCntY = 0; iCntY < 3; iCntY++) {
-        if (iSectorY + iCntY < 0 || iSectorY + iCntY >= dfSECTOR_Y_MAX)
+        if (iSectorY + iCntY < 0 || iSectorY + iCntY >= kSectorYMax)
             continue;
 
         for (iCntX = 0; iCntX < 3; iCntX++) {
-            if (iSectorX + iCntX < 0 || iSectorX + iCntX >= dfSECTOR_X_MAX)
+            if (iSectorX + iCntX < 0 || iSectorX + iCntX >= kSectorXMax)
                 continue;
 
             std::list<stCharacter*>::iterator iter_Sector;
@@ -356,83 +356,9 @@ void Chat_Server::SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket)
     }
 }
 
-//////////////////////////////////////////////////////////////////////////////////
-
-//void Chat_Server::EnqueueJob(WORD JobType, unsigned __int64 SessionID, CPacket* pPacket)
-//{
-//	stJob* pJob = AllocJob();
-//	pJob->JobType = JobType;
-//	pJob->SessionID = SessionID;
-//	pJob->pPacket = pPacket;
-//
-//	JobQueue.Enqueue(pJob);
-//	SetEvent(hJobEvent);
-//}
-
-//Chat_Server::stJob* Chat_Server::DequeueJob(void)
-//{
-//	stJob* pJob;
-//	while (1)
-//	{
-//		if (JobQueue.Dequeue(pJob))
-//		{
-//			InterlockedIncrement(&_JobTPS);
-//			return pJob;
-//		}
-//
-//		_Running_CurTime = timeGetTime() - _Running_CurTime;
-//		InterlockedExchangeAdd(&_UpdateThread_RunningTime, _Running_CurTime);
-//
-//		WaitForSingleObject(hJobEvent, INFINITE);
-//		InterlockedIncrement(&_UpdateThread_RunningTPS);
-//
-//		_Running_CurTime = timeGetTime();
-//
-//	}
-//}
-//
-//
-//void Chat_Server::DequeueJob(WORD& JobType, unsigned __int64& SessionID, CPacket*& pPacket)
-//{
-////	1.	while true 뭐임
-////	2.	이 함수의 기능이 너무 많음 // 여기서 블록되면 안되지 + 여기서 _Running_CurTime 업데이트 하는것도 이상함
-////	3.	타임 재는거 스타일이 좀....
-//
-//	while (1)
-//	{
-//		stJob* pJob;
-//		if (JobQueue.Dequeue(pJob))
-//		{
-//			JobType = pJob->JobType;
-//			SessionID = pJob->SessionID;
-//			pPacket = pJob->pPacket;
-//
-//			FreeJob(pJob);
-//
-//			InterlockedIncrement(&_JobTPS);
-//			return;
-//		}
-//
-//		_Running_CurTime = timeGetTime() - _Running_CurTime;
-//		InterlockedExchangeAdd(&_UpdateThread_RunningTime, _Running_CurTime);
-//		WaitForSingleObject(hJobEvent, INFINITE);
-//
-//		InterlockedIncrement(&_UpdateThread_RunningTPS);
-//
-//		_Running_CurTime = timeGetTime();
-//	}
-//}
 
 
-//void Chat_Server::CreateContentThread(bool HeartBeat)
-//{
-//	hContentThread = (HANDLE)_beginthreadex(NULL, 0, UpdateThread_Chat_Field1, (LPVOID)this, 0, NULL);
-//
-//	if(HeartBeat) hTimerThread5000 = (HANDLE)_beginthreadex(NULL, 0, TimerThread_Chat_5000, (LPVOID)this, 0, NULL);
-//}
-
-
-Chat_Server::stJob* Chat_Server::AllocJob(int JobType, unsigned __int64 SessionID,
+Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 SessionID,
                                           CPacket* pPacket) {
     MemoryPool_TLS_Node<stJob>* pJobPool = (MemoryPool_TLS_Node<stJob>*)TlsGetValue(
         MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTLSIndex());
@@ -441,7 +367,7 @@ Chat_Server::stJob* Chat_Server::AllocJob(int JobType, unsigned __int64 SessionI
         pJobPool->SetTLS();
     }
     stJob* pJob = pJobPool->Alloc();
-    pJob->JobType = JobType;
+    pJob->type = type;
     pJob->SessionID = SessionID;
     pJob->pPacket = pPacket;
 
