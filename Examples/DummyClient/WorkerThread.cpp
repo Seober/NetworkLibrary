@@ -58,7 +58,7 @@ static void InitiateConnect(ClientSession& s, WorkerContext* ctx) {
         s.state = SessionState::kConnected;
         s.lastHeartbeat = GetTickCount();
         s.lastMessage = GetTickCount();
-        InterlockedIncrement(ctx->pConnected);
+        InterlockedIncrement(ctx->Connected);
     } else {
         int err = WSAGetLastError();
         if (err == WSAEWOULDBLOCK) {
@@ -72,10 +72,10 @@ static void InitiateConnect(ClientSession& s, WorkerContext* ctx) {
     }
 }
 
-// ACTIVE → DISCONNECTED 전환 시 pActive 감소 (현재 active 수 추적용)
+// ACTIVE → DISCONNECTED 전환 시 Active 감소 (현재 active 수 추적용)
 static void MarkDisconnected(ClientSession& s, WorkerContext* ctx) {
     if (s.state == SessionState::kActive)
-        InterlockedDecrement(ctx->pActive);
+        InterlockedDecrement(ctx->Active);
     s.state = SessionState::kDisconnected;
 }
 
@@ -97,7 +97,7 @@ static void HandleConnectComplete(ClientSession& s, WorkerContext* ctx, bool wri
             s.state = SessionState::kConnected;
             s.lastHeartbeat = GetTickCount();
             s.lastMessage = GetTickCount();
-            InterlockedIncrement(ctx->pConnected);
+            InterlockedIncrement(ctx->Connected);
         } else {
             closesocket(s.sock);
             s.sock = INVALID_SOCKET;
@@ -263,21 +263,21 @@ static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx) {
                 if (status == 1) {
                     s.state = SessionState::kActive;
                     s.disconnectAt = ComputeDisconnectAt(ctx);
-                    InterlockedIncrement(ctx->pActive);
+                    InterlockedIncrement(ctx->Active);
                     // 로그인 성공 즉시 섹터 이동
                     SendSectorMovePacket(s, ctx);
                 } else {
                     // 로그인 실패 — disconnect 후 재연결 사이클로
                     MarkDisconnected(s, ctx);
                     s.reconnectAt = ComputeReconnectAt();
-                    InterlockedIncrement(ctx->pFailed);
+                    InterlockedIncrement(ctx->Failed);
                 }
                 break;
             }
             case kCsChatResMessage: {
                 s.messagesRecv++;
-                InterlockedIncrement(ctx->pTPS_Recv);
-                InterlockedIncrement64(ctx->pTotalRecv);
+                InterlockedIncrement(ctx->TPS_Recv);
+                InterlockedIncrement64(ctx->TotalRecv);
                 break;
             }
             case kCsChatResSectorMove:
@@ -334,8 +334,8 @@ static void HandleSend(ClientSession& s, WorkerContext* ctx) {
         memmove(s.sendBuf, s.sendBuf + n, s.sendBytes - n);
     s.sendBytes -= n;
 
-    InterlockedExchangeAdd(ctx->pTPS_Sent, n);
-    InterlockedExchangeAdd64(ctx->pTotalSent, n);
+    InterlockedExchangeAdd(ctx->TPS_Sent, n);
+    InterlockedExchangeAdd64(ctx->TotalSent, n);
 }
 
 unsigned __stdcall WorkerThreadFunc(LPVOID param) {
@@ -351,7 +351,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
         if (s.sock == INVALID_SOCKET) {
             s.state = SessionState::kDisconnected;
             s.reconnectAt = ComputeReconnectAt();
-            InterlockedIncrement(ctx->pFailed);
+            InterlockedIncrement(ctx->Failed);
             continue;
         }
 
@@ -363,7 +363,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
             s.sock = INVALID_SOCKET;
             s.state = SessionState::kDisconnected;
             s.reconnectAt = ComputeReconnectAt();
-            InterlockedIncrement(ctx->pFailed);
+            InterlockedIncrement(ctx->Failed);
             continue;
         }
 
@@ -373,7 +373,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
         s.state = SessionState::kConnected;
         s.lastHeartbeat = GetTickCount();
         s.lastMessage = GetTickCount();
-        InterlockedIncrement(ctx->pConnected);
+        InterlockedIncrement(ctx->Connected);
     }
 
     // Phase 2: select 루프 — 무작위 disconnect + 자동 재연결
@@ -459,7 +459,7 @@ unsigned __stdcall WorkerThreadFunc(LPVOID param) {
                 if (s.sock != INVALID_SOCKET) {
                     closesocket(s.sock);
                     s.sock = INVALID_SOCKET;
-                    InterlockedIncrement(ctx->pDisconnected);
+                    InterlockedIncrement(ctx->Disconnected);
                     s.reconnectAt = ComputeReconnectAt();  // 매 cycle 새 delay
                 } else if (now >= s.reconnectAt) {
                     InitiateConnect(s, ctx);

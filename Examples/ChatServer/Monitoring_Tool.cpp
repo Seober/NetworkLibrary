@@ -5,10 +5,10 @@
 
 Monitoring_Tool::Monitoring_Tool(HANDLE hProcess) {
     if (hProcess == INVALID_HANDLE_VALUE)
-        _hProcess = GetCurrentProcess();
+        Process = GetCurrentProcess();
     WCHAR ProcessNameBuf[1024];
     DWORD BufSize = sizeof(ProcessNameBuf) / 2;
-    QueryFullProcessImageNameW(_hProcess, 0, ProcessNameBuf, &BufSize);
+    QueryFullProcessImageNameW(Process, 0, ProcessNameBuf, &BufSize);
 
     WCHAR* pContext;
     WCHAR* befPtr;
@@ -34,35 +34,35 @@ Monitoring_Tool::Monitoring_Tool(HANDLE hProcess) {
     // 프로세서 갯수, 프로세스 실행률 계산 시 CPU(프로세서) 갯수를 나눠 실제 사용률을 구함
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
-    _iNumberOfProcessors = SystemInfo.dwNumberOfProcessors;
+    NumberOfProcessors = SystemInfo.dwNumberOfProcessors;
 
-    _fProcessorTotal = 0;
-    _fProcessorUser = 0;
-    _fProcessorKernel = 0;
+    ProcessorTotal_ = 0;
+    ProcessorUser_ = 0;
+    ProcessorKernel_ = 0;
 
-    _fProcessTotal = 0;
-    _fProcessUser = 0;
-    _fProcessKernel = 0;
+    ProcessTotal_ = 0;
+    ProcessUser_ = 0;
+    ProcessKernel_ = 0;
 
-    _ftProcessor_LastKernel.QuadPart = 0;
-    _ftProcessor_LastUser.QuadPart = 0;
-    _ftProcessor_LastIdle.QuadPart = 0;
+    Processor_LastKernel.QuadPart = 0;
+    Processor_LastUser.QuadPart = 0;
+    Processor_LastIdle.QuadPart = 0;
 
-    _ftProcess_LastUser.QuadPart = 0;
-    _ftProcess_LastKernel.QuadPart = 0;
-    _ftProcess_LastTime.QuadPart = 0;
+    Process_LastUser.QuadPart = 0;
+    Process_LastKernel.QuadPart = 0;
+    Process_LastTime.QuadPart = 0;
 
-    PdhOpenQuery(NULL, NULL, &_Query_PDH);
+    PdhOpenQuery(NULL, NULL, &Query_PDH);
 
     WCHAR StrBuf[1024];
     wsprintf(StrBuf, L"\\Process(%s)\\Private Bytes", ptr);
-    PdhAddCounter(_Query_PDH, StrBuf, NULL, &_Counter_ProcessUserAllocMemory);
+    PdhAddCounter(Query_PDH, StrBuf, NULL, &Counter_ProcessUserAllocMemory);
 
     wsprintf(StrBuf, L"\\Process(%s)\\Pool Nonpaged Bytes", ptr);
-    PdhAddCounter(_Query_PDH, StrBuf, NULL, &_Counter_ProcessNonPagedMemory);
+    PdhAddCounter(Query_PDH, StrBuf, NULL, &Counter_ProcessNonPagedMemory);
 
-    PdhAddCounter(_Query_PDH, L"\\Memory\\Available MBytes", NULL, &_Counter_AvailableMemory);
-    PdhAddCounter(_Query_PDH, L"\\Memory\\Pool Nonpaged Bytes", NULL, &_Counter_NonPagedMemory);
+    PdhAddCounter(Query_PDH, L"\\Memory\\Available MBytes", NULL, &Counter_AvailableMemory);
+    PdhAddCounter(Query_PDH, L"\\Memory\\Pool Nonpaged Bytes", NULL, &Counter_NonPagedMemory);
 
     /*
 	쿼리 추가필요 시 https://docs.microsoft.com/ko-kr/windows/win32/perfctrs/browsing-performance-counters를 통해 쿼리를 얻고 하드코딩
@@ -99,19 +99,19 @@ Monitoring_Tool::Monitoring_Tool(HANDLE hProcess) {
     szCur = szInterfaces;
 
     for (; *szCur != L'\0' && iCnt < kPdhEthernetMax; szCur += wcslen(szCur) + 1, iCnt++) {
-        _EthernetStruct[iCnt]._bUse = true;
-        _EthernetStruct[iCnt]._szName[0] = L'\0';
-        wcscpy_s(_EthernetStruct[iCnt]._szName, szCur);
+        EthernetStruct[iCnt].Use = true;
+        EthernetStruct[iCnt].Name[0] = L'\0';
+        wcscpy_s(EthernetStruct[iCnt].Name, szCur);
         szQuery[0] = L'\0';
         StringCbPrintf(szQuery, sizeof(WCHAR) * 1024,
                        L"\\Network Interface(%s)\\Bytes Received/sec", szCur);
-        PdhAddCounter(_Query_PDH, szQuery, NULL,
-                      &_EthernetStruct[iCnt]._pdh_Counter_Network_RecvBytes);
+        PdhAddCounter(Query_PDH, szQuery, NULL,
+                      &EthernetStruct[iCnt].pdh_Counter_Network_RecvBytes);
         szQuery[0] = L'\0';
         StringCbPrintf(szQuery, sizeof(WCHAR) * 1024, L"\\Network Interface(%s)\\Bytes Sent/sec",
                        szCur);
-        PdhAddCounter(_Query_PDH, szQuery, NULL,
-                      &_EthernetStruct[iCnt]._pdh_Counter_Network_SendBytes);
+        PdhAddCounter(Query_PDH, szQuery, NULL,
+                      &EthernetStruct[iCnt].pdh_Counter_Network_SendBytes);
     }
 
 
@@ -134,27 +134,27 @@ void Monitoring_Tool::UpdateCPUTime() {
     if (GetSystemTimes((PFILETIME)&Idle, (PFILETIME)&Kernel, (PFILETIME)&User) == false)
         return;
 
-    ULONGLONG KernelDiff = Kernel.QuadPart - _ftProcessor_LastKernel.QuadPart;
-    ULONGLONG UserDiff = User.QuadPart - _ftProcessor_LastUser.QuadPart;
-    ULONGLONG IdleDiff = Idle.QuadPart - _ftProcessor_LastIdle.QuadPart;
+    ULONGLONG KernelDiff = Kernel.QuadPart - Processor_LastKernel.QuadPart;
+    ULONGLONG UserDiff = User.QuadPart - Processor_LastUser.QuadPart;
+    ULONGLONG IdleDiff = Idle.QuadPart - Processor_LastIdle.QuadPart;
 
     ULONGLONG Total = KernelDiff + UserDiff;
     ULONGLONG TimeDiff;
 
     if (Total == 0) {
-        _fProcessorUser = 0.0f;
-        _fProcessorKernel = 0.0f;
-        _fProcessorTotal = 0.0f;
+        ProcessorUser_ = 0.0f;
+        ProcessorKernel_ = 0.0f;
+        ProcessorTotal_ = 0.0f;
     } else {
         //커널에 아이들이 포함되어있으므로 빼서 계산
-        _fProcessorTotal = (float)((double)(Total - IdleDiff) / Total * 100.0f);
-        _fProcessorUser = (float)((double)UserDiff / Total * 100.0f);
-        _fProcessorKernel = (float)((double)(KernelDiff - IdleDiff) / Total * 100.0f);
+        ProcessorTotal_ = (float)((double)(Total - IdleDiff) / Total * 100.0f);
+        ProcessorUser_ = (float)((double)UserDiff / Total * 100.0f);
+        ProcessorKernel_ = (float)((double)(KernelDiff - IdleDiff) / Total * 100.0f);
     }
 
-    _ftProcessor_LastKernel = Kernel;
-    _ftProcessor_LastUser = User;
-    _ftProcessor_LastIdle = Idle;
+    Processor_LastKernel = Kernel;
+    Processor_LastUser = User;
+    Processor_LastIdle = Idle;
 
 
     // 지정된 프로세스 사용률 갱신
@@ -174,55 +174,55 @@ void Monitoring_Tool::UpdateCPUTime() {
 
     //프로세스 사용시간 측정
     // 두,세번째 파라미터는 프로세스생성시간과 프로세스 종료시간으로 미사용할것, 종료되지않은경우 값이없음
-    GetProcessTimes(_hProcess, (LPFILETIME)&None, (LPFILETIME)&None, (LPFILETIME)&Kernel,
+    GetProcessTimes(Process, (LPFILETIME)&None, (LPFILETIME)&None, (LPFILETIME)&Kernel,
                     (LPFILETIME)&User);
 
 
     //이전에 저장한 프로세스 시간과의 차를 구해 실제로 얼마의 시간이 지났는지 확인
     // 그리고 실제 지나온 시간으로 나누면 사용률이 나옴
-    TimeDiff = NowTime.QuadPart - _ftProcess_LastTime.QuadPart;
-    UserDiff = User.QuadPart - _ftProcess_LastUser.QuadPart;
-    KernelDiff = Kernel.QuadPart - _ftProcess_LastKernel.QuadPart;
+    TimeDiff = NowTime.QuadPart - Process_LastTime.QuadPart;
+    UserDiff = User.QuadPart - Process_LastUser.QuadPart;
+    KernelDiff = Kernel.QuadPart - Process_LastKernel.QuadPart;
 
     Total = KernelDiff + UserDiff;
 
-    _fProcessTotal = (float)(Total / (double)_iNumberOfProcessors / (double)TimeDiff * 100.0f);
-    _fProcessKernel =
-        (float)(KernelDiff / (double)_iNumberOfProcessors / (double)TimeDiff * 100.0f);
-    _fProcessUser = (float)(UserDiff / (double)_iNumberOfProcessors / (double)TimeDiff * 100.0f);
+    ProcessTotal_ = (float)(Total / (double)NumberOfProcessors / (double)TimeDiff * 100.0f);
+    ProcessKernel_ =
+        (float)(KernelDiff / (double)NumberOfProcessors / (double)TimeDiff * 100.0f);
+    ProcessUser_ = (float)(UserDiff / (double)NumberOfProcessors / (double)TimeDiff * 100.0f);
 
-    _ftProcess_LastTime = NowTime;
-    _ftProcess_LastKernel = Kernel;
-    _ftProcess_LastUser = User;
+    Process_LastTime = NowTime;
+    Process_LastKernel = Kernel;
+    Process_LastUser = User;
 }
 
 
 void Monitoring_Tool::UpdateQuery() {
-    PdhCollectQueryData(_Query_PDH);
+    PdhCollectQueryData(Query_PDH);
 
     PDH_FMT_COUNTERVALUE CounterVal;
 
-    PdhGetFormattedCounterValue(_Counter_ProcessUserAllocMemory, PDH_FMT_LONG, NULL, &CounterVal);
-    _lProcessUserAllocMemory = CounterVal.longValue;
+    PdhGetFormattedCounterValue(Counter_ProcessUserAllocMemory, PDH_FMT_LONG, NULL, &CounterVal);
+    ProcessUserAllocMemory_ = CounterVal.longValue;
 
-    PdhGetFormattedCounterValue(_Counter_ProcessNonPagedMemory, PDH_FMT_LONG, NULL, &CounterVal);
-    _lProcessNonPagedMemory = CounterVal.longValue;
+    PdhGetFormattedCounterValue(Counter_ProcessNonPagedMemory, PDH_FMT_LONG, NULL, &CounterVal);
+    ProcessNonPagedMemory_ = CounterVal.longValue;
 
-    PdhGetFormattedCounterValue(_Counter_AvailableMemory, PDH_FMT_LONG, NULL, &CounterVal);
-    _lAvailableMemory = CounterVal.longValue;
+    PdhGetFormattedCounterValue(Counter_AvailableMemory, PDH_FMT_LONG, NULL, &CounterVal);
+    AvailableMemory_ = CounterVal.longValue;
 
-    PdhGetFormattedCounterValue(_Counter_NonPagedMemory, PDH_FMT_LONG, NULL, &CounterVal);
-    _lNonPagedMemory = CounterVal.longValue;
+    PdhGetFormattedCounterValue(Counter_NonPagedMemory, PDH_FMT_LONG, NULL, &CounterVal);
+    NonPagedMemory_ = CounterVal.longValue;
 
     /////////////////////////////////////////////
     for (int iCnt = 0; iCnt < kPdhEthernetMax; iCnt++) {
-        if (_EthernetStruct[iCnt]._bUse) {
-            if (PdhGetFormattedCounterValue(_EthernetStruct[iCnt]._pdh_Counter_Network_RecvBytes,
+        if (EthernetStruct[iCnt].Use) {
+            if (PdhGetFormattedCounterValue(EthernetStruct[iCnt].pdh_Counter_Network_RecvBytes,
                                             PDH_FMT_DOUBLE, NULL, &CounterVal) == ERROR_SUCCESS)
-                _pdh_value_Network_RecvBytes += CounterVal.doubleValue;
-            if (PdhGetFormattedCounterValue(_EthernetStruct[iCnt]._pdh_Counter_Network_SendBytes,
+                pdh_value_Network_RecvBytes += CounterVal.doubleValue;
+            if (PdhGetFormattedCounterValue(EthernetStruct[iCnt].pdh_Counter_Network_SendBytes,
                                             PDH_FMT_DOUBLE, NULL, &CounterVal) == ERROR_SUCCESS)
-                _pdh_value_Network_SendBytes += CounterVal.doubleValue;
+                pdh_value_Network_SendBytes += CounterVal.doubleValue;
         }
     }
 }

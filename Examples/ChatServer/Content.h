@@ -19,16 +19,16 @@ public:
 
     struct stJob {
         JobType type;
-        unsigned __int64 SessionID;
-        CPacket* pPacket;
+        unsigned __int64 SessionID_;
+        CPacket* Packet;
     };
 
     struct stCharacter {
-        unsigned __int64 SessionID;
+        unsigned __int64 SessionID_;
         INT64 AccountNo;
         short SectorX;
         short SectorY;
-        DWORD dwLastRecvTime;
+        DWORD LastRecvTime;
 
         WCHAR ID[20];
         WCHAR Nickname[20];
@@ -59,7 +59,7 @@ public:
     int RemainJob(void) { return JobQueue.GetUseSize(); }
     int GetThreadRunningTime(void) { return InterlockedExchange(&UpdateThreadSleepTime, 0); }
     int GetThreadRunningTPS(void) { return InterlockedExchange(&UpdateThreadRunningTPS, 0); }
-    int GetJobTPS(void) { return InterlockedExchange(&_JobTPS, 0); }
+    int GetJobTPS(void) { return InterlockedExchange(&JobTPS, 0); }
     int Log_JobQueue_StackSize(void) { return JobQueue.GetStackSize(); }
     int Log_JobQueue_TotalPool(void) { return JobQueue.GetPool_TotalSize(); }
     int getGetPool_UseSize(void) { return JobQueue.GetPool_UseSize(); }
@@ -86,12 +86,12 @@ private:
     inline void FreeJob(stJob* pJob);
 
 private:
-    HANDLE hContentThread;
-    HANDLE hTimerThread5000;
-    HANDLE hJobEvent;
+    HANDLE ContentThread;
+    HANDLE TimerThread5000;
+    HANDLE JobEvent;
 
-    unsigned int _MaxUser;
-    DWORD _Running_CurTime;
+    unsigned int MaxUser_;
+    DWORD Running_CurTime;
 
     LockFree_Queue_TLS<stJob*> JobQueue;
 
@@ -102,7 +102,7 @@ private:
     Logger* pLogger;
 
 
-    alignas(64) long _JobTPS;
+    alignas(64) long JobTPS;
     alignas(64) long UpdateThreadRunningTPS;
     alignas(64) DWORD UpdateThreadSleepTime;
 };

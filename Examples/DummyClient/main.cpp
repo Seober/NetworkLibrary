@@ -141,14 +141,14 @@ int wmain(int argc, WCHAR* argv[]) {
         ctxArr[t].maxLifetimeMs = maxLifetime;
         ctxArr[t].shutdownEvent = shutdownEvent;
         ctxArr[t].encoder = &encoder;
-        ctxArr[t].pConnected = &connected;
-        ctxArr[t].pActive = &active;
-        ctxArr[t].pFailed = &failed;
-        ctxArr[t].pDisconnected = &disconnected;
-        ctxArr[t].pTPS_Sent = &tps_sent;
-        ctxArr[t].pTPS_Recv = &tps_recv;
-        ctxArr[t].pTotalSent = &totalSent;
-        ctxArr[t].pTotalRecv = &totalRecv;
+        ctxArr[t].Connected = &connected;
+        ctxArr[t].Active = &active;
+        ctxArr[t].Failed = &failed;
+        ctxArr[t].Disconnected = &disconnected;
+        ctxArr[t].TPS_Sent = &tps_sent;
+        ctxArr[t].TPS_Recv = &tps_recv;
+        ctxArr[t].TotalSent = &totalSent;
+        ctxArr[t].TotalRecv = &totalRecv;
 
         threadHandles[t] = (HANDLE)_beginthreadex(NULL, 0, WorkerThreadFunc, &ctxArr[t], 0, NULL);
 

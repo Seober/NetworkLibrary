@@ -8,30 +8,30 @@ constexpr int kMessageBufsize = 1000;
 WCHAR MessageBuf[kMessageBufsize];
 
 Chat_Server::Chat_Server(int MaxUser, bool HeartBeatFlag) {
-    hContentThread = INVALID_HANDLE_VALUE;
-    hTimerThread5000 = INVALID_HANDLE_VALUE;
-    hJobEvent = CreateEvent(NULL, false, false, NULL);
+    ContentThread = INVALID_HANDLE_VALUE;
+    TimerThread5000 = INVALID_HANDLE_VALUE;
+    JobEvent = CreateEvent(NULL, false, false, NULL);
 
-    _MaxUser = MaxUser;
+    MaxUser_ = MaxUser;
 
-    _Running_CurTime = 0;
+    Running_CurTime = 0;
 
-    _JobTPS = 0;
+    JobTPS = 0;
     UpdateThreadRunningTPS = 0;
     UpdateThreadSleepTime = 0;
 
     pLogger = Logger::GetInstance();
 
-    hContentThread =
+    ContentThread =
         (HANDLE)_beginthreadex(NULL, 0, UpdateThread_Chat_Field1, (LPVOID)this, 0, NULL);
     if (HeartBeatFlag)
-        hTimerThread5000 =
+        TimerThread5000 =
             (HANDLE)_beginthreadex(NULL, 0, TimerThread_Chat_5000, (LPVOID)this, 0, NULL);
 }
 
 
 bool Chat_Server::OnConnectionRequest() {
-    if (GetCharacterSize() < (int)_MaxUser)
+    if (GetCharacterSize() < (int)MaxUser_)
         return true;
     else
         return false;
@@ -40,12 +40,12 @@ bool Chat_Server::OnConnectionRequest() {
 void Chat_Server::OnClientJoin(unsigned __int64 SessionID) {
     stJob* pJob = AllocJob(JobType::kJoin, SessionID, NULL);
     JobQueue.Enqueue(pJob);
-    SetEvent(hJobEvent);
+    SetEvent(JobEvent);
 }
 void Chat_Server::OnClientLeave(unsigned __int64 SessionID) {
     stJob* pJob = AllocJob(JobType::kLeave, SessionID, NULL);
     JobQueue.Enqueue(pJob);
-    SetEvent(hJobEvent);
+    SetEvent(JobEvent);
 }
 
 
@@ -53,7 +53,7 @@ void Chat_Server::OnRecv(unsigned __int64 SessionID, CPacket* pPacket) {
     pPacket->IncrementRef();
     stJob* pJob = AllocJob(JobType::kMessage, SessionID, pPacket);
     JobQueue.Enqueue(pJob);
-    SetEvent(hJobEvent);
+    SetEvent(JobEvent);
 }
 
 unsigned WINAPI Chat_Server::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
@@ -63,7 +63,7 @@ unsigned WINAPI Chat_Server::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
     while (1) {
         pJob = pServer->AllocJob(JobType::kHeartbeat, NULL, NULL);
         pServer->JobQueue.Enqueue(pJob);
-        SetEvent(pServer->hJobEvent);
+        SetEvent(pServer->JobEvent);
 
         Sleep(5000);
     }
@@ -78,19 +78,19 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
 
     while (1) {
         if (pServer->JobQueue.Dequeue(pJob)) {
-            InterlockedIncrement(&pServer->_JobTPS);
+            InterlockedIncrement(&pServer->JobTPS);
 
             switch (pJob->type) {
                 case JobType::kMessage:
-                    pServer->MessageControl(pJob->SessionID, pJob->pPacket);
+                    pServer->MessageControl(pJob->SessionID_, pJob->Packet);
                     break;
 
                 case JobType::kJoin:
-                    pServer->CreateCharacter(pJob->SessionID);
+                    pServer->CreateCharacter(pJob->SessionID_);
                     break;
 
                 case JobType::kLeave:
-                    pServer->LeaveCharacter(pJob->SessionID);
+                    pServer->LeaveCharacter(pJob->SessionID_);
                     break;
 
                 case JobType::kHeartbeat:
@@ -106,7 +106,7 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
             pServer->FreeJob(pJob);
         } else {
             DWORD SleepTime = timeGetTime();
-            WaitForSingleObject(pServer->hJobEvent, INFINITE);
+            WaitForSingleObject(pServer->JobEvent, INFINITE);
             SleepTime = timeGetTime() - SleepTime;
             InterlockedExchangeAdd(&pServer->UpdateThreadSleepTime, SleepTime);
             InterlockedIncrement(&pServer->UpdateThreadRunningTPS);
@@ -128,7 +128,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
         pLogger->Crash();
     }
 
-    pCharacter->dwLastRecvTime = timeGetTime();
+    pCharacter->LastRecvTime = timeGetTime();
 
     *pMessagePacket >> MessageType;
 
@@ -178,7 +178,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
                     L"Disconnect", Logger::LogLevel::kError,
                     L"# SectorMove # KillSession Called > AccountNo:%d, CharacterAccountNo:%d",
                     AccountNo, pCharacter->AccountNo);
-                KillSession(pCharacter->SessionID);
+                KillSession(pCharacter->SessionID_);
                 break;
             }
 
@@ -225,7 +225,7 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
                     L"Disconnect", Logger::LogLevel::kError,
                     L"# SectorMove # KillSession Called > AccountNo:%d, CharacterAccountNo:%d",
                     AccountNo, pCharacter->AccountNo);
-                KillSession(pCharacter->SessionID);
+                KillSession(pCharacter->SessionID_);
                 break;
             }
 
@@ -273,10 +273,10 @@ Chat_Server::stCharacter* Chat_Server::CreateCharacter(unsigned __int64 SessionI
         return NULL;
 
     stCharacter* pCharacter = CharacterPool.Alloc();
-    pCharacter->SessionID = SessionID;
+    pCharacter->SessionID_ = SessionID;
     pCharacter->AccountNo = 0;
     pCharacter->SectorX = -1;
-    pCharacter->dwLastRecvTime = timeGetTime();
+    pCharacter->LastRecvTime = timeGetTime();
     CharacterMap.insert(std::make_pair(SessionID, pCharacter));
     return pCharacter;
 }
@@ -297,11 +297,11 @@ void Chat_Server::CheckHeartBeat(void) {
          ++iter_CharacterMap) {
         stCharacter* pCharacter = iter_CharacterMap->second;
 
-        if (Cur_Time - pCharacter->dwLastRecvTime > 40000) {
+        if (Cur_Time - pCharacter->LastRecvTime > 40000) {
             pLogger->Log(L"Content", Logger::LogLevel::kSystem,
                          L"# Character TimeOut # AccountNo:%d, ID:%s, Nickname:%s",
                          pCharacter->AccountNo, pCharacter->ID, pCharacter->Nickname);
-            KillSession(pCharacter->SessionID);
+            KillSession(pCharacter->SessionID_);
         }
     }
 }
@@ -350,7 +350,7 @@ void Chat_Server::SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket)
             for (iter_Sector = SectorList[iSectorY + iCntY][iSectorX + iCntX].begin();
                  iter_Sector != SectorList[iSectorY + iCntY][iSectorX + iCntX].end();
                  ++iter_Sector) {
-                SendPacket((*iter_Sector)->SessionID, pPacket);
+                SendPacket((*iter_Sector)->SessionID_, pPacket);
             }
         }
     }
@@ -368,8 +368,8 @@ Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 Session
     }
     stJob* pJob = pJobPool->Alloc();
     pJob->type = type;
-    pJob->SessionID = SessionID;
-    pJob->pPacket = pPacket;
+    pJob->SessionID_ = SessionID;
+    pJob->Packet = pPacket;
 
     return pJob;
 }
