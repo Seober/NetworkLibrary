@@ -3,9 +3,9 @@
 #include <windows.h>
 
 
-CPacket::CPacket(int BufSize) {
+CPacket::CPacket(int bufferSize) {
     RefCnt = 0;
-    BufferSize = BufSize;
+    BufferSize = bufferSize;
     Front = 0;
     Rear = 0;
 

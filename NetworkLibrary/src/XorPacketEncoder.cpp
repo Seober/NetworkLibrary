@@ -12,24 +12,24 @@ void XorPacketEncoder::Encode(CPacket& packet) {
     packet.LockPacket();
     if (packet.CheckFlag_Encode() == false) {
         // 헤더 작성 — 페이로드 위치 미리 잡고, Front를 헤더 공간으로 후진
-        char* pPayload = packet.GetReadBufferPtr();
+        char* payload = packet.GetReadBufferPtr();
         WORD payloadSize = (WORD)packet.GetDataSize();
         BYTE checksum = 0;
 
         packet.MoveReadPos(-(int)sizeof(NetHeader));
-        NetHeader* pHeader = (NetHeader*)packet.GetReadBufferPtr();
-        pHeader->Code = HeaderCode;
-        pHeader->Len = payloadSize;
-        pHeader->RKey = (BYTE)(rand() % 256);
+        NetHeader* header = (NetHeader*)packet.GetReadBufferPtr();
+        header->Code = HeaderCode;
+        header->Len = payloadSize;
+        header->RKey = (BYTE)(rand() % 256);
 
         for (WORD i = 0; i < payloadSize; i++)
-            checksum += pPayload[i];
-        pHeader->Checksum = checksum;
+            checksum += payload[i];
+        header->Checksum = checksum;
 
         // XOR 암호화 — Checksum byte부터 페이로드 끝까지
-        BYTE RK = pHeader->RKey;
+        BYTE RK = header->RKey;
         BYTE P;
-        char* p = (char*)pHeader + sizeof(NetHeader) - sizeof(BYTE);  // Checksum 위치
+        char* p = (char*)header + sizeof(NetHeader) - sizeof(BYTE);  // Checksum 위치
 
         // 첫 byte (Checksum)
         P = *p ^ (RK + 1);
@@ -46,28 +46,28 @@ void XorPacketEncoder::Encode(CPacket& packet) {
 }
 
 bool XorPacketEncoder::Decode(CPacket& packet) {
-    NetHeader* pHeader = (NetHeader*)packet.GetReadBufferPtr();
-    BYTE RK = pHeader->RKey;
+    NetHeader* header = (NetHeader*)packet.GetReadBufferPtr();
+    BYTE RK = header->RKey;
     BYTE checksum = 0;
 
-    unsigned char* pRear =
-        (unsigned char*)pHeader + sizeof(NetHeader) - sizeof(BYTE) + pHeader->Len;
-    unsigned char* pTmp = pRear;
+    unsigned char* rear =
+        (unsigned char*)header + sizeof(NetHeader) - sizeof(BYTE) + header->Len;
+    unsigned char* tmp = rear;
 
     // 첫 루프 — encryptKey XOR 풀기 (역순)
-    for (int i = pHeader->Len + 1; i > 1; i--, pTmp--)
-        *pTmp = *pTmp ^ (*(pTmp - 1) + EncryptKey + i);
-    *pTmp = *pTmp ^ (EncryptKey + 1);
+    for (int i = header->Len + 1; i > 1; i--, tmp--)
+        *tmp = *tmp ^ (*(tmp - 1) + EncryptKey + i);
+    *tmp = *tmp ^ (EncryptKey + 1);
 
     // 둘째 루프 — RKey XOR 풀기 + checksum 계산 (역순)
-    pTmp = pRear;
-    for (int i = pHeader->Len + 1; i > 1; i--, pTmp--) {
-        *pTmp = *pTmp ^ (*(pTmp - 1) + RK + i);
-        checksum += *pTmp;
+    tmp = rear;
+    for (int i = header->Len + 1; i > 1; i--, tmp--) {
+        *tmp = *tmp ^ (*(tmp - 1) + RK + i);
+        checksum += *tmp;
     }
-    *pTmp = *pTmp ^ (RK + 1);
+    *tmp = *tmp ^ (RK + 1);
 
-    if (pHeader->Checksum != checksum)
+    if (header->Checksum != checksum)
         return false;
 
     // 성공 — Front를 페이로드 시작 위치로 이동 (호출자가 페이로드만 직접 read 가능)
@@ -80,15 +80,15 @@ std::size_t XorPacketEncoder::GetHeaderSize() const {
 }
 
 bool XorPacketEncoder::VerifyHeaderMagic(const void* headerBytes) const {
-    const NetHeader* pHeader = (const NetHeader*)headerBytes;
-    return pHeader->Code == HeaderCode;
+    const NetHeader* header = (const NetHeader*)headerBytes;
+    return header->Code == HeaderCode;
 }
 
 bool XorPacketEncoder::PeekPayloadLength(const void* headerBytes,
                                          std::size_t& outPayloadLen) const {
-    const NetHeader* pHeader = (const NetHeader*)headerBytes;
-    if (MaxPayloadLen != 0 && pHeader->Len > MaxPayloadLen)
+    const NetHeader* header = (const NetHeader*)headerBytes;
+    if (MaxPayloadLen != 0 && header->Len > MaxPayloadLen)
         return false;
-    outPayloadLen = pHeader->Len;
+    outPayloadLen = header->Len;
     return true;
 }

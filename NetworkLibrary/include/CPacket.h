@@ -6,7 +6,7 @@ public:
     static constexpr int kBufferDefault = 1024;
     static constexpr int kHeaderDefault = 20;
 
-    CPacket(int BufferSize = kBufferDefault);
+    CPacket(int bufferSize = kBufferDefault);
     ~CPacket(void);
 
     void Release(void);
@@ -33,48 +33,48 @@ public:
 
 
     // GetBufferPtr을 이용해서 강제로 버퍼내용을 수정할 경우
-    inline int MoveWritePos(int iSize);
-    inline int MoveReadPos(int iSize);
+    inline int MoveWritePos(int size);
+    inline int MoveReadPos(int size);
 
-    inline CPacket& operator<<(unsigned char byValue);
-    inline CPacket& operator<<(char chValue);
+    inline CPacket& operator<<(unsigned char value);
+    inline CPacket& operator<<(char value);
 
-    inline CPacket& operator<<(short shValue);
-    inline CPacket& operator<<(unsigned short wValue);
+    inline CPacket& operator<<(short value);
+    inline CPacket& operator<<(unsigned short value);
 
-    inline CPacket& operator<<(int iValue);
-    inline CPacket& operator<<(long lValue);
-    inline CPacket& operator<<(unsigned long lValue);
-    inline CPacket& operator<<(float fValue);
+    inline CPacket& operator<<(int value);
+    inline CPacket& operator<<(long value);
+    inline CPacket& operator<<(unsigned long value);
+    inline CPacket& operator<<(float value);
 
-    inline CPacket& operator<<(__int64 iValue);
-    inline CPacket& operator<<(double dValue);
+    inline CPacket& operator<<(__int64 value);
+    inline CPacket& operator<<(double value);
 
-    inline CPacket& operator<<(char* cString);
-    inline CPacket& operator<<(WCHAR* wString);
+    inline CPacket& operator<<(char* str);
+    inline CPacket& operator<<(WCHAR* str);
 
 
-    inline CPacket& operator>>(BYTE& byValue);
-    inline CPacket& operator>>(char& chValue);
+    inline CPacket& operator>>(BYTE& value);
+    inline CPacket& operator>>(char& value);
 
-    inline CPacket& operator>>(short& shValue);
-    inline CPacket& operator>>(WORD& wValue);
+    inline CPacket& operator>>(short& value);
+    inline CPacket& operator>>(WORD& value);
 
-    inline CPacket& operator>>(int& iValue);
-    inline CPacket& operator>>(DWORD& dwValue);
-    inline CPacket& operator>>(float& fValue);
+    inline CPacket& operator>>(int& value);
+    inline CPacket& operator>>(DWORD& value);
+    inline CPacket& operator>>(float& value);
 
-    inline CPacket& operator>>(__int64& iValue);
-    inline CPacket& operator>>(double& dValue);
+    inline CPacket& operator>>(__int64& value);
+    inline CPacket& operator>>(double& value);
 
-    inline CPacket& operator>>(char* cString);
-    inline CPacket& operator>>(WCHAR* wString);
+    inline CPacket& operator>>(char* str);
+    inline CPacket& operator>>(WCHAR* str);
 
-    inline int GetData(char* chpDest, int iSize);
-    inline int GetData(WCHAR* wcpDest, int iSize);
+    inline int GetData(char* dest, int size);
+    inline int GetData(WCHAR* dest, int size);
 
-    inline int PutData(char* shpSrc, int iSrcSize);
-    inline int PutData(WCHAR* wcpSrc, int iSrcSize);
+    inline int PutData(char* src, int srcSize);
+    inline int PutData(WCHAR* src, int srcSize);
 
     inline void ShiftDataToFront(void) {
         int DataSize = GetDataSize();
@@ -115,155 +115,155 @@ void CPacket::Clear(void) {
     EncodeFlag = false;
 }
 
-int CPacket::MoveWritePos(int iSize) {
-    if (Rear + iSize > BufferSize)
-        iSize = BufferSize - Rear;
-    Rear += iSize;
-    return iSize;
+int CPacket::MoveWritePos(int size) {
+    if (Rear + size > BufferSize)
+        size = BufferSize - Rear;
+    Rear += size;
+    return size;
 }
 
-int CPacket::MoveReadPos(int iSize) {
-    if (Front + iSize > Rear)
-        iSize = Rear - Front;
-    Front += iSize;
-    return iSize;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-int CPacket::GetData(char* chpDest, int iSize) {
-    if (Front + iSize > Rear)
-        iSize = Rear - Front;
-
-    memcpy(chpDest, &Buffer[Front], iSize);
-
-    Front += iSize;
-
-    return iSize;
-}
-
-int CPacket::GetData(WCHAR* wcpDest, int iSize) {
-    iSize *= 2;
-    if (Front + iSize > Rear)
-        iSize = Rear - Front;
-
-    memcpy(wcpDest, &Buffer[Front], iSize);
-
-    Front += iSize;
-
-    return iSize;
-}
-
-int CPacket::PutData(char* shpSrc, int iSrcSize) {
-    if (Rear + iSrcSize > BufferSize)
-        iSrcSize = BufferSize - Rear;
-
-    memcpy(&Buffer[Rear], shpSrc, iSrcSize);
-
-    Rear += iSrcSize;
-
-    return iSrcSize;
-}
-
-
-int CPacket::PutData(WCHAR* wcpSrc, int iSrcSize) {
-    iSrcSize *= 2;
-    if (Rear + iSrcSize > BufferSize)
-        iSrcSize = BufferSize - Rear;
-
-    memcpy(&Buffer[Rear], wcpSrc, iSrcSize);
-
-    Rear += iSrcSize;
-
-    return iSrcSize;
+int CPacket::MoveReadPos(int size) {
+    if (Front + size > Rear)
+        size = Rear - Front;
+    Front += size;
+    return size;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CPacket& CPacket::operator<<(unsigned char byValue) {
-    memcpy(&Buffer[Rear], &byValue, sizeof(unsigned char));
+int CPacket::GetData(char* dest, int size) {
+    if (Front + size > Rear)
+        size = Rear - Front;
+
+    memcpy(dest, &Buffer[Front], size);
+
+    Front += size;
+
+    return size;
+}
+
+int CPacket::GetData(WCHAR* dest, int size) {
+    size *= 2;
+    if (Front + size > Rear)
+        size = Rear - Front;
+
+    memcpy(dest, &Buffer[Front], size);
+
+    Front += size;
+
+    return size;
+}
+
+int CPacket::PutData(char* src, int srcSize) {
+    if (Rear + srcSize > BufferSize)
+        srcSize = BufferSize - Rear;
+
+    memcpy(&Buffer[Rear], src, srcSize);
+
+    Rear += srcSize;
+
+    return srcSize;
+}
+
+
+int CPacket::PutData(WCHAR* src, int srcSize) {
+    srcSize *= 2;
+    if (Rear + srcSize > BufferSize)
+        srcSize = BufferSize - Rear;
+
+    memcpy(&Buffer[Rear], src, srcSize);
+
+    Rear += srcSize;
+
+    return srcSize;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+CPacket& CPacket::operator<<(unsigned char value) {
+    memcpy(&Buffer[Rear], &value, sizeof(unsigned char));
     Rear += sizeof(unsigned char);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(char chValue) {
-    memcpy(&Buffer[Rear], &chValue, sizeof(char));
+CPacket& CPacket::operator<<(char value) {
+    memcpy(&Buffer[Rear], &value, sizeof(char));
     Rear += sizeof(char);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(short shValue) {
-    memcpy(&Buffer[Rear], &shValue, sizeof(short));
-    Rear += sizeof(shValue);
+CPacket& CPacket::operator<<(short value) {
+    memcpy(&Buffer[Rear], &value, sizeof(short));
+    Rear += sizeof(value);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(unsigned short wValue) {
-    memcpy(&Buffer[Rear], &wValue, sizeof(unsigned short));
-    Rear += sizeof(wValue);
+CPacket& CPacket::operator<<(unsigned short value) {
+    memcpy(&Buffer[Rear], &value, sizeof(unsigned short));
+    Rear += sizeof(value);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(int iValue) {
-    memcpy(&Buffer[Rear], &iValue, sizeof(int));
+CPacket& CPacket::operator<<(int value) {
+    memcpy(&Buffer[Rear], &value, sizeof(int));
     Rear += sizeof(int);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(long lValue) {
-    memcpy(&Buffer[Rear], &lValue, sizeof(long));
+CPacket& CPacket::operator<<(long value) {
+    memcpy(&Buffer[Rear], &value, sizeof(long));
     Rear += sizeof(long);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(unsigned long lValue) {
-    memcpy(&Buffer[Rear], &lValue, sizeof(unsigned long));
+CPacket& CPacket::operator<<(unsigned long value) {
+    memcpy(&Buffer[Rear], &value, sizeof(unsigned long));
     Rear += sizeof(unsigned long);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(float fValue) {
-    memcpy(&Buffer[Rear], &fValue, sizeof(float));
+CPacket& CPacket::operator<<(float value) {
+    memcpy(&Buffer[Rear], &value, sizeof(float));
     Rear += sizeof(float);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(__int64 iValue) {
-    memcpy(&Buffer[Rear], &iValue, sizeof(__int64));
+CPacket& CPacket::operator<<(__int64 value) {
+    memcpy(&Buffer[Rear], &value, sizeof(__int64));
     Rear += sizeof(__int64);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(double dValue) {
-    memcpy(&Buffer[Rear], &dValue, sizeof(double));
+CPacket& CPacket::operator<<(double value) {
+    memcpy(&Buffer[Rear], &value, sizeof(double));
     Rear += sizeof(double);
 
     return *this;
 }
 
-CPacket& CPacket::operator<<(char* cString) {
-    short len = (short)strlen(cString);
+CPacket& CPacket::operator<<(char* str) {
+    short len = (short)strlen(str);
     memcpy(&Buffer[Rear], &len, sizeof(short));
-    memcpy(&Buffer[Rear + sizeof(short)], cString, len);
+    memcpy(&Buffer[Rear + sizeof(short)], str, len);
     Rear += sizeof(short) + len;
 
     return *this;
 }
 
 
-CPacket& CPacket::operator<<(WCHAR* wString) {
-    short len = (short)wcslen(wString) * 2;
+CPacket& CPacket::operator<<(WCHAR* str) {
+    short len = (short)wcslen(str) * 2;
     memcpy(&Buffer[Rear], &len, sizeof(short));
-    memcpy(&Buffer[Rear + sizeof(short)], wString, len);
+    memcpy(&Buffer[Rear + sizeof(short)], str, len);
     Rear += sizeof(short) + len;
 
     return *this;
@@ -271,82 +271,82 @@ CPacket& CPacket::operator<<(WCHAR* wString) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CPacket& CPacket::operator>>(BYTE& byValue) {
-    memcpy(&byValue, &Buffer[Front], sizeof(BYTE));
+CPacket& CPacket::operator>>(BYTE& value) {
+    memcpy(&value, &Buffer[Front], sizeof(BYTE));
     Front += sizeof(BYTE);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(char& chValue) {
-    memcpy(&chValue, &Buffer[Front], sizeof(char));
+CPacket& CPacket::operator>>(char& value) {
+    memcpy(&value, &Buffer[Front], sizeof(char));
     Front += sizeof(char);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(short& shValue) {
-    memcpy(&shValue, &Buffer[Front], sizeof(short));
+CPacket& CPacket::operator>>(short& value) {
+    memcpy(&value, &Buffer[Front], sizeof(short));
     Front += sizeof(short);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(WORD& wValue) {
-    memcpy(&wValue, &Buffer[Front], sizeof(WORD));
+CPacket& CPacket::operator>>(WORD& value) {
+    memcpy(&value, &Buffer[Front], sizeof(WORD));
     Front += sizeof(WORD);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(int& iValue) {
-    memcpy(&iValue, &Buffer[Front], sizeof(int));
+CPacket& CPacket::operator>>(int& value) {
+    memcpy(&value, &Buffer[Front], sizeof(int));
     Front += sizeof(int);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(DWORD& dwValue) {
-    memcpy(&dwValue, &Buffer[Front], sizeof(DWORD));
+CPacket& CPacket::operator>>(DWORD& value) {
+    memcpy(&value, &Buffer[Front], sizeof(DWORD));
     Front += sizeof(DWORD);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(float& fValue) {
-    memcpy(&fValue, &Buffer[Front], sizeof(float));
+CPacket& CPacket::operator>>(float& value) {
+    memcpy(&value, &Buffer[Front], sizeof(float));
     Front += sizeof(float);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(__int64& iValue) {
-    memcpy(&iValue, &Buffer[Front], sizeof(__int64));
+CPacket& CPacket::operator>>(__int64& value) {
+    memcpy(&value, &Buffer[Front], sizeof(__int64));
     Front += sizeof(__int64);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(double& dValue) {
-    memcpy(&dValue, &Buffer[Front], sizeof(double));
+CPacket& CPacket::operator>>(double& value) {
+    memcpy(&value, &Buffer[Front], sizeof(double));
     Front += sizeof(double);
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(char* cString) {
+CPacket& CPacket::operator>>(char* str) {
     short* len = (short*)&Buffer[Front];
-    memcpy(cString, &Buffer[Front + sizeof(short)], *len);
-    cString[*len] = '\0';
+    memcpy(str, &Buffer[Front + sizeof(short)], *len);
+    str[*len] = '\0';
     Front += sizeof(short) + *len;
 
     return *this;
 }
 
-CPacket& CPacket::operator>>(WCHAR* wString) {
+CPacket& CPacket::operator>>(WCHAR* str) {
     short* len = (short*)&Buffer[Front];
-    memcpy(wString, &Buffer[Front + sizeof(short)], *len);
-    wString[*len] = L'\0';
+    memcpy(str, &Buffer[Front + sizeof(short)], *len);
+    str[*len] = L'\0';
     Front += sizeof(short) + *len;
 
     return *this;

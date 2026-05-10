@@ -20,7 +20,7 @@ public:
     struct stSESSION {
         bool SessionUseFlag;
         alignas(16) volatile LONG64 ReleaseArr[2];
-        unsigned __int64 SessionID_;
+        unsigned __int64 SessionID;
 
         char LastAction;
 
@@ -48,38 +48,38 @@ public:
     CNet_Server(IPacketEncoder* encoder = nullptr);
     ~CNet_Server();
 
-    bool Start(const WCHAR* ServerIP, u_short ServerPort, u_short WorkerThreadCnt_Total,
-               u_short WorkerThreadCnt_Run, BOOL Nagle, u_short ConnectSession_Max);
+    bool Start(const WCHAR* serverIP, u_short serverPort, u_short workerThreadCnt_Total,
+               u_short workerThreadCnt_Run, BOOL nagle, u_short connectSession_Max);
     /*void Stop();*/
     u_long GetSessionCnt_Connected() { return SessionCnt_Total - FreeSessionStack.GetUseSize(); }
     u_long GetSessionCnt_Disconnected() { return FreeSessionStack.GetUseSize(); }
     u_long GetSessionCnt_Total() { return SessionCnt_Total; }
 
-    stSESSION* FindSession(unsigned __int64 SessionID) { return &SessionArr[SessionID >> 48]; }
+    stSESSION* FindSession(unsigned __int64 sessionID) { return &SessionArr[sessionID >> 48]; }
     stSESSION* GetFreeSession(void);
 
-    void KillSession(unsigned __int64 SessionID);
-    void DisconnectSession(stSESSION* pSession);
+    void KillSession(unsigned __int64 sessionID);
+    void DisconnectSession(stSESSION* session);
 
-    void SendPacket(unsigned __int64 SessionID, CPacket* pPacket);
+    void SendPacket(unsigned __int64 sessionID, CPacket* packet);
 
     virtual bool OnConnectionRequest() = 0;
-    virtual void OnClientJoin(unsigned __int64 SessionID) = 0;
-    virtual void OnClientLeave(unsigned __int64 SessionID) = 0;
-    virtual void OnRecv(unsigned __int64 SessionID, CPacket* pPacket) = 0;
+    virtual void OnClientJoin(unsigned __int64 sessionID) = 0;
+    virtual void OnClientLeave(unsigned __int64 sessionID) = 0;
+    virtual void OnRecv(unsigned __int64 sessionID, CPacket* packet) = 0;
 
     /*SOCKET GetListenSocket() { return ListenSocket; }*/
     unsigned __int64 GetSessionID_New() { return ++SessionID_Cnt; }
     /*HANDLE GetIOCPHandle() { return IOCP; }*/
 
-    bool SendPost(stSESSION* pSession, DWORD Flag = 0);
-    bool RecvPost(stSESSION* pSession, DWORD Flag = 0);
+    bool SendPost(stSESSION* session, DWORD flag = 0);
+    bool RecvPost(stSESSION* session, DWORD flag = 0);
 
     CPacket* AllocPacket(void);
-    void FreePacket(CPacket* pPacket);
+    void FreePacket(CPacket* packet);
 
-    bool CheckPacketMessageComplete(unsigned __int64 SessionID, CPacket* pRecvQ);
-    bool GetPacketMessage(CPacket* pPacket, CPacket* pRecvQ);
+    bool CheckPacketMessageComplete(unsigned __int64 sessionID, CPacket* recvQ);
+    bool GetPacketMessage(CPacket* packet, CPacket* recvQ);
 
     ////////////////////////////////////////////////////////////////////////////////
     int Log_GetPacketPoolTotal(void) { return PacketPool->GetTotalMemCnt(); }
@@ -91,11 +91,11 @@ public:
     int GetPoolCnt_Use(void) { return PacketPool->GetPoolCnt_Use(); }
     int GetPoolCnt_Free(void) { return PacketPool->GetPoolCnt_Free(); }
 
-    void AddRecvBytes(DWORD dwRecvBytes);
+    void AddRecvBytes(DWORD recvBytes);
     void AddRecvPacket(void);
-    void AddSend(DWORD SendPacketCnt, DWORD dwSendBytes);
+    void AddSend(DWORD sendPacketCnt, DWORD sendBytes);
 
-    void GetTransmit(DWORD* TransmitBuffer);
+    void GetTransmit(DWORD* transmitBuffer);
 
     void AddAcceptCnt(void) {
         InterlockedExchangeAdd(&AcceptTotal, 1);
@@ -106,8 +106,8 @@ public:
     DWORD GetAcceptTPS(void) { return InterlockedExchange(&AcceptTPS, 0); }
 
 private:
-    void ReleaseSession(stSESSION* pSession);
-    void initSession(stSESSION* pSession);
+    void ReleaseSession(stSESSION* session);
+    void initSession(stSESSION* session);
 
     // thread_local 캐시로 LogTransmit_Map 접근 — find/insert race 회피
     // 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
