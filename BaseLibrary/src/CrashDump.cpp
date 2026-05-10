@@ -31,7 +31,7 @@ void CrashDump::Crash(void) {
     *p = 0;
 }
 
-LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPointer) {
+LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPointer) {
     SYSTEMTIME stNowTime;
 
     long DumpCount = InterlockedIncrement(&DumpCount);
@@ -58,20 +58,20 @@ LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPoin
             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond);
     wprintf(L"Now Save Dump File...\n");
 
-    HANDLE hDumpFile = ::CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS,
-                                    FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE dumpFile = ::CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS,
+                                   FILE_ATTRIBUTE_NORMAL, NULL);
 
-    if (hDumpFile != INVALID_HANDLE_VALUE) {
+    if (dumpFile != INVALID_HANDLE_VALUE) {
         _MINIDUMP_EXCEPTION_INFORMATION MinidumpExceptionInformation;
 
         MinidumpExceptionInformation.ThreadId = ::GetCurrentThreadId();
-        MinidumpExceptionInformation.ExceptionPointers = pExceptionPointer;
+        MinidumpExceptionInformation.ExceptionPointers = exceptionPointer;
         MinidumpExceptionInformation.ClientPointers = TRUE;
 
-        MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile,
+        MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), dumpFile,
                           MiniDumpWithFullMemory, &MinidumpExceptionInformation, NULL, NULL);
 
-        CloseHandle(hDumpFile);
+        CloseHandle(dumpFile);
         wprintf(L"CrashDump Save Finish !");
     }
 

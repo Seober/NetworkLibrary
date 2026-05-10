@@ -36,8 +36,8 @@ public:
             return retval == (PVOID)Comp;
         }
 
-        stNode_TAGED(stNode* pNode) { Bit.Index = (unsigned __int64)pNode; }
-        inline void operator=(stNode* pNode) { Bit.Index = (unsigned __int64)pNode; }
+        stNode_TAGED(stNode* node) { Bit.Index = (unsigned __int64)node; }
+        inline void operator=(stNode* node) { Bit.Index = (unsigned __int64)node; }
         inline stNode* operator->(void) { return (stNode*)Bit.Index; }
     };
 

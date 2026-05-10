@@ -13,7 +13,7 @@ public:
         kSystem
     };
 
-    void Log(const WCHAR* szType, LogLevel level, const WCHAR* szStringFormat, ...);
+    void Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, ...);
 
     static Logger* GetInstance(void) {
         if (pLogger == NULL) {
@@ -52,7 +52,7 @@ private:
 
     LogLevel Log_Level;
 
-    unsigned __int64 LogCnt_;
+    unsigned __int64 LogCnt;
 
 
     static long Key_Singleton;

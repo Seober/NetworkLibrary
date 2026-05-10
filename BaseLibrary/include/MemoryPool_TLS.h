@@ -9,23 +9,23 @@ public:
     static constexpr int kChunkDefault = 100;
 
     void* AllocChunck() {
-        void* pChunck;
-        if (ChunckStack.Pop(pChunck) == false) {
+        void* chunck;
+        if (ChunckStack.Pop(chunck) == false) {
             InterlockedExchangeAdd(&TotalSize, kChunkDefault);
             InterlockedExchangeAdd(&UseSize, kChunkDefault);
-            pChunck = NULL;
+            chunck = NULL;
         } else {
             InterlockedExchangeAdd(&FreeSize, -kChunkDefault);
             InterlockedExchangeAdd(&UseSize, kChunkDefault);
         }
-        return pChunck;
+        return chunck;
     }
 
-    void FreeChunck(void* pChunck) {
+    void FreeChunck(void* chunck) {
         int ChunckSize = kChunkDefault;
         InterlockedExchangeAdd(&UseSize, -kChunkDefault);
         InterlockedExchangeAdd(&FreeSize, kChunkDefault);
-        ChunckStack.Push(pChunck);
+        ChunckStack.Push(chunck);
     }
 
 
@@ -162,43 +162,43 @@ public:
             FreeNodeCnt += ChunckSize;
         }
 
-        stNode* pNode = Head;
+        stNode* node = Head;
         Head = Head->Next;
         FreeNodeCnt--;
 
-        return &pNode->Data;
+        return &node->Data;
     }
 
-    void Free(T* pTarget) {
-        stNode* pNode = (stNode*)((char*)pTarget - sizeof(PadType));
-        if (pNode->Pad_UnderFlow != kPadUnderflow ||
-            pNode->Pad_OverFlow != kPadOverflow) {
+    void Free(T* target) {
+        stNode* node = (stNode*)((char*)target - sizeof(PadType));
+        if (node->Pad_UnderFlow != kPadUnderflow ||
+            node->Pad_OverFlow != kPadOverflow) {
             char* Err_Make = NULL;
             *Err_Make = 10;
         }
 
-        pNode->Next = Head;
-        Head = pNode;
+        node->Next = Head;
+        Head = node;
         if (++FreeNodeCnt >= ChunckSize) {
             for (int i = 0; i < ChunckSize; i++)
                 Head = Head->Next;
             FreeNodeCnt -= ChunckSize;
-            ChunckPool->FreeChunck(pNode);
+            ChunckPool->FreeChunck(node);
         }
     }
 
 private:
     stNode* NewNodeList() {
-        stNode* pHead = Head;
+        stNode* head = Head;
 
         for (int i = 0; i < ChunckSize; i++) {
-            stNode* pNewNode = new stNode;
+            stNode* newNode = new stNode;
 
-            pNewNode->Next = pHead;
-            pHead = pNewNode;
+            newNode->Next = head;
+            head = newNode;
         }
 
-        return pHead;
+        return head;
     }
 
 private:

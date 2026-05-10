@@ -41,8 +41,8 @@ public:
             return retval == (PVOID)Comp;
         }
 
-        stNode_TAGED(stNode* pNode) { Bit.Index = (unsigned __int64)pNode; }
-        inline void operator=(stNode* pNode) { Bit.Index = (unsigned __int64)pNode; }
+        stNode_TAGED(stNode* node) { Bit.Index = (unsigned __int64)node; }
+        inline void operator=(stNode* node) { Bit.Index = (unsigned __int64)node; }
         inline stNode* operator->(void) { return (stNode*)Bit.Index; }
     };
 
@@ -53,9 +53,9 @@ public:
     }
 
     inline T* Alloc(void);
-    /*inline void Alloc(T* pTarget);*/
+    /*inline void Alloc(T* target);*/
 
-    inline void Free(T* pTarget);
+    inline void Free(T* target);
 
     int GetUseMemCnt(void) { return Cnt_UseNode; }
     int GetFreeMemCnt(void) { return Cnt_FreeNode; }
@@ -66,7 +66,7 @@ private:
     inline void NewNode(void);
     inline WORD GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }
 
-    inline void PushtoFreeNode(stNode* pNode);
+    inline void PushtoFreeNode(stNode* node);
     inline stNode* PopFromFreeNode(void) {
         stNode_TAGED OldTop;
         stNode_TAGED NewTop;
@@ -124,10 +124,10 @@ MemoryPool_LF<T>::MemoryPool_LF(int initSize) {
 template <typename T>
 void MemoryPool_LF<T>::Clear_MemoryPool(void) {
     while (1) {
-        stNode* pDeleteNode = PopFromFreeNode();
-        if (pDeleteNode == NULL)
+        stNode* deleteNode = PopFromFreeNode();
+        if (deleteNode == NULL)
             break;
-        delete pDeleteNode;
+        delete deleteNode;
     }
 
     Cnt_FreeNode = 0;
@@ -138,44 +138,44 @@ void MemoryPool_LF<T>::Clear_MemoryPool(void) {
 
 template <typename T>
 void MemoryPool_LF<T>::NewNode(void) {
-    stNode* pNode = new stNode;
+    stNode* node = new stNode;
 
-    PushtoFreeNode(pNode);
+    PushtoFreeNode(node);
     InterlockedIncrement(&Cnt_TotalNode);
 }
 
 
 template <typename T>
 T* MemoryPool_LF<T>::Alloc(void) {
-    stNode* pNode = PopFromFreeNode();
-    while (!pNode) {
+    stNode* node = PopFromFreeNode();
+    while (!node) {
         for (int i = 0; i < MemoryAllocSize; i++)
             NewNode();
-        pNode = PopFromFreeNode();
+        node = PopFromFreeNode();
     }
     InterlockedIncrement(&Cnt_UseNode);
 
-    return &pNode->Data;
+    return &node->Data;
 }
 
 
 template <typename T>
-void MemoryPool_LF<T>::Free(T* pTarget) {
-    stNode* pNode = (stNode*)((char*)pTarget - sizeof(PadType));
-    if (pNode->Pad_UnderFlow != kPadUnderflow ||
-        pNode->Pad_OverFlow != kPadOverflow) {
+void MemoryPool_LF<T>::Free(T* target) {
+    stNode* node = (stNode*)((char*)target - sizeof(PadType));
+    if (node->Pad_UnderFlow != kPadUnderflow ||
+        node->Pad_OverFlow != kPadOverflow) {
         char* Err_Make = NULL;
         *Err_Make = 10;
     }
 
-    PushtoFreeNode(pNode);
+    PushtoFreeNode(node);
     InterlockedDecrement(&Cnt_UseNode);
 }
 
 template <typename T>
-void MemoryPool_LF<T>::PushtoFreeNode(stNode* pNode) {
+void MemoryPool_LF<T>::PushtoFreeNode(stNode* node) {
     stNode_TAGED OldTop;
-    stNode_TAGED NewTop = pNode;
+    stNode_TAGED NewTop = node;
     NewTop.SetTag(GetTagCnt());
     do {
         OldTop = Head_FreeNode;

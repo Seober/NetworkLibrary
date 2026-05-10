@@ -11,12 +11,12 @@ public:
 
     static void Crash(void);  // @
 
-    static LONG WINAPI MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPointer);  //@
+    static LONG WINAPI MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPointer);  //@
 
     static void SetHandlerDump() { SetUnhandledExceptionFilter(MyExceptionFilter); }
     static void myInvalidParameterHandler(const wchar_t* expression, const wchar_t* function,
                                           const wchar_t* file, unsigned int line,
-                                          uintptr_t pReserved) {
+                                          uintptr_t reserved) {
         Crash();
     }
 

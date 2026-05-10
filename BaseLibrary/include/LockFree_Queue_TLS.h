@@ -48,8 +48,8 @@ private:
             return retval == (PVOID)Comp;
         }
 
-        stNode_TAGED(stNode* pNode) { Bit.Index = (unsigned __int64)pNode; }
-        inline void operator=(stNode* pNode) { Bit.Index = (unsigned __int64)pNode; }
+        stNode_TAGED(stNode* node) { Bit.Index = (unsigned __int64)node; }
+        inline void operator=(stNode* node) { Bit.Index = (unsigned __int64)node; }
         inline stNode* operator->(void) { return (stNode*)Bit.Index; }
         inline bool operator==(stNode_TAGED Comp) { return Data == Comp.Data; }
     };
@@ -86,24 +86,24 @@ public:
 private:
     inline WORD GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }
     inline stNode* AllocNode(void) {
-        MemoryPool_TLS_Node<stNode>* pNodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(
+        MemoryPool_TLS_Node<stNode>* nodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(
             MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetTLSIndex());
-        if (pNodePool == NULL) {
-            pNodePool = new MemoryPool_TLS_Node<stNode>;
-            pNodePool->SetTLS();
+        if (nodePool == NULL) {
+            nodePool = new MemoryPool_TLS_Node<stNode>;
+            nodePool->SetTLS();
         }
 
-        return pNodePool->Alloc();
+        return nodePool->Alloc();
     }
 
-    inline void FreeNode(stNode* pNode) {
-        MemoryPool_TLS_Node<stNode>* pNodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(
+    inline void FreeNode(stNode* node) {
+        MemoryPool_TLS_Node<stNode>* nodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(
             MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetTLSIndex());
-        if (pNodePool == NULL) {
-            pNodePool = new MemoryPool_TLS_Node<stNode>;
-            pNodePool->SetTLS();
+        if (nodePool == NULL) {
+            nodePool = new MemoryPool_TLS_Node<stNode>;
+            nodePool->SetTLS();
         }
-        pNodePool->Free(pNode);
+        nodePool->Free(node);
     }
 
 private:
