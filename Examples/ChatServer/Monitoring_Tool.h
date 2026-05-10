@@ -14,7 +14,7 @@ public:
         PDH_HCOUNTER pdh_Counter_Network_SendBytes;
     };
     //생성자, 확인대상 프로세스 핸들, 미입력 시 자기자신
-    Monitoring_Tool(HANDLE hProcess = INVALID_HANDLE_VALUE);
+    Monitoring_Tool(HANDLE process = INVALID_HANDLE_VALUE);
 
     void UpdateCPUTime(void);
     void UpdateQuery(void);

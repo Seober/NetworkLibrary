@@ -19,12 +19,12 @@ public:
 
     struct stJob {
         JobType type;
-        unsigned __int64 SessionID_;
+        unsigned __int64 SessionID;
         CPacket* Packet;
     };
 
     struct stCharacter {
-        unsigned __int64 SessionID_;
+        unsigned __int64 SessionID;
         INT64 AccountNo;
         short SectorX;
         short SectorY;
@@ -35,21 +35,21 @@ public:
     };
 
 public:
-    Chat_Server(int MaxUser = 5000, bool HeartBeatFlag = false);
+    Chat_Server(int maxUser = 5000, bool heartBeatFlag = false);
     ~Chat_Server() {}
 
 
     bool OnConnectionRequest();
-    void OnClientJoin(unsigned __int64 SessionID);
-    void OnClientLeave(unsigned __int64 SessionID);
-    void OnRecv(unsigned __int64 SessionID, CPacket* pPacket);
+    void OnClientJoin(unsigned __int64 sessionID);
+    void OnClientLeave(unsigned __int64 sessionID);
+    void OnRecv(unsigned __int64 sessionID, CPacket* packet);
 
 
-    void MessageControl(unsigned __int64 SessionID, CPacket* pMessagePacket);
-    stCharacter* FindCharacter(unsigned __int64 SessionID);
-    stCharacter* CreateCharacter(unsigned __int64 SessionID);
-    void LeaveCharacter(unsigned __int64 SessionID);  // 캐릭터에 대한 형태로 이름 바꾸기
-    void SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket);
+    void MessageControl(unsigned __int64 sessionID, CPacket* messagePacket);
+    stCharacter* FindCharacter(unsigned __int64 sessionID);
+    stCharacter* CreateCharacter(unsigned __int64 sessionID);
+    void LeaveCharacter(unsigned __int64 sessionID);  // 캐릭터에 대한 형태로 이름 바꾸기
+    void SendPacketAround(int sectorX, int sectorY, CPacket* packet);
     void CheckHeartBeat(void);
 
 
@@ -82,15 +82,15 @@ private:
     static unsigned WINAPI UpdateThread_Chat_Field1(LPVOID lpThreadParameter);
     static unsigned WINAPI TimerThread_Chat_5000(LPVOID lpThreadParameter);
 
-    inline stJob* AllocJob(JobType type, unsigned __int64 SessionID, CPacket* pPacket);
-    inline void FreeJob(stJob* pJob);
+    inline stJob* AllocJob(JobType type, unsigned __int64 sessionID, CPacket* packet);
+    inline void FreeJob(stJob* job);
 
 private:
     HANDLE ContentThread;
     HANDLE TimerThread5000;
     HANDLE JobEvent;
 
-    unsigned int MaxUser_;
+    unsigned int MaxUser;
     DWORD Running_CurTime;
 
     LockFree_Queue_TLS<stJob*> JobQueue;

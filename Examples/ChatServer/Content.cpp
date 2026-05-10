@@ -7,12 +7,12 @@
 constexpr int kMessageBufsize = 1000;
 WCHAR MessageBuf[kMessageBufsize];
 
-Chat_Server::Chat_Server(int MaxUser, bool HeartBeatFlag) {
+Chat_Server::Chat_Server(int maxUser, bool heartBeatFlag) {
     ContentThread = INVALID_HANDLE_VALUE;
     TimerThread5000 = INVALID_HANDLE_VALUE;
     JobEvent = CreateEvent(NULL, false, false, NULL);
 
-    MaxUser_ = MaxUser;
+    MaxUser = maxUser;
 
     Running_CurTime = 0;
 
@@ -24,46 +24,46 @@ Chat_Server::Chat_Server(int MaxUser, bool HeartBeatFlag) {
 
     ContentThread =
         (HANDLE)_beginthreadex(NULL, 0, UpdateThread_Chat_Field1, (LPVOID)this, 0, NULL);
-    if (HeartBeatFlag)
+    if (heartBeatFlag)
         TimerThread5000 =
             (HANDLE)_beginthreadex(NULL, 0, TimerThread_Chat_5000, (LPVOID)this, 0, NULL);
 }
 
 
 bool Chat_Server::OnConnectionRequest() {
-    if (GetCharacterSize() < (int)MaxUser_)
+    if (GetCharacterSize() < (int)MaxUser)
         return true;
     else
         return false;
 }
 
-void Chat_Server::OnClientJoin(unsigned __int64 SessionID) {
-    stJob* pJob = AllocJob(JobType::kJoin, SessionID, NULL);
-    JobQueue.Enqueue(pJob);
+void Chat_Server::OnClientJoin(unsigned __int64 sessionID) {
+    stJob* job = AllocJob(JobType::kJoin, sessionID, NULL);
+    JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
-void Chat_Server::OnClientLeave(unsigned __int64 SessionID) {
-    stJob* pJob = AllocJob(JobType::kLeave, SessionID, NULL);
-    JobQueue.Enqueue(pJob);
+void Chat_Server::OnClientLeave(unsigned __int64 sessionID) {
+    stJob* job = AllocJob(JobType::kLeave, sessionID, NULL);
+    JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
 
 
-void Chat_Server::OnRecv(unsigned __int64 SessionID, CPacket* pPacket) {
-    pPacket->IncrementRef();
-    stJob* pJob = AllocJob(JobType::kMessage, SessionID, pPacket);
-    JobQueue.Enqueue(pJob);
+void Chat_Server::OnRecv(unsigned __int64 sessionID, CPacket* packet) {
+    packet->IncrementRef();
+    stJob* job = AllocJob(JobType::kMessage, sessionID, packet);
+    JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
 
 unsigned WINAPI Chat_Server::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
-    Chat_Server* pServer = (Chat_Server*)lpThreadParameter;
-    stJob* pJob;
+    Chat_Server* server = (Chat_Server*)lpThreadParameter;
+    stJob* job;
 
     while (1) {
-        pJob = pServer->AllocJob(JobType::kHeartbeat, NULL, NULL);
-        pServer->JobQueue.Enqueue(pJob);
-        SetEvent(pServer->JobEvent);
+        job = server->AllocJob(JobType::kHeartbeat, NULL, NULL);
+        server->JobQueue.Enqueue(job);
+        SetEvent(server->JobEvent);
 
         Sleep(5000);
     }
@@ -73,43 +73,43 @@ unsigned WINAPI Chat_Server::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
 
 
 unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) {
-    Chat_Server* pServer = (Chat_Server*)lpThreadParameter;
-    stJob* pJob;
+    Chat_Server* server = (Chat_Server*)lpThreadParameter;
+    stJob* job;
 
     while (1) {
-        if (pServer->JobQueue.Dequeue(pJob)) {
-            InterlockedIncrement(&pServer->JobTPS);
+        if (server->JobQueue.Dequeue(job)) {
+            InterlockedIncrement(&server->JobTPS);
 
-            switch (pJob->type) {
+            switch (job->type) {
                 case JobType::kMessage:
-                    pServer->MessageControl(pJob->SessionID_, pJob->Packet);
+                    server->MessageControl(job->SessionID, job->Packet);
                     break;
 
                 case JobType::kJoin:
-                    pServer->CreateCharacter(pJob->SessionID_);
+                    server->CreateCharacter(job->SessionID);
                     break;
 
                 case JobType::kLeave:
-                    pServer->LeaveCharacter(pJob->SessionID_);
+                    server->LeaveCharacter(job->SessionID);
                     break;
 
                 case JobType::kHeartbeat:
-                    pServer->CheckHeartBeat();
+                    server->CheckHeartBeat();
                     break;
                 default:
-                    pServer->pLogger->Log(L"Content", Logger::LogLevel::kError,
-                                          L"JobType:%d", pJob->type);
-                    pServer->pLogger->Crash();
+                    server->pLogger->Log(L"Content", Logger::LogLevel::kError,
+                                          L"JobType:%d", job->type);
+                    server->pLogger->Crash();
                     break;
             }
 
-            pServer->FreeJob(pJob);
+            server->FreeJob(job);
         } else {
-            DWORD SleepTime = timeGetTime();
-            WaitForSingleObject(pServer->JobEvent, INFINITE);
-            SleepTime = timeGetTime() - SleepTime;
-            InterlockedExchangeAdd(&pServer->UpdateThreadSleepTime, SleepTime);
-            InterlockedIncrement(&pServer->UpdateThreadRunningTPS);
+            DWORD sleepTime = timeGetTime();
+            WaitForSingleObject(server->JobEvent, INFINITE);
+            sleepTime = timeGetTime() - sleepTime;
+            InterlockedExchangeAdd(&server->UpdateThreadSleepTime, sleepTime);
+            InterlockedIncrement(&server->UpdateThreadRunningTPS);
         }
     }
 
@@ -118,137 +118,137 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
 }
 
 
-void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePacket) {
-    WORD MessageType;
-    stCharacter* pCharacter;
+void Chat_Server::MessageControl(unsigned __int64 sessionID, CPacket* messagePacket) {
+    WORD messageType;
+    stCharacter* character;
 
-    pCharacter = FindCharacter(SessionID);
-    if (pCharacter == NULL) {
+    character = FindCharacter(sessionID);
+    if (character == NULL) {
         pLogger->Log(L"Content", Logger::LogLevel::kError, L"# Character Not Exist #");
         pLogger->Crash();
     }
 
-    pCharacter->LastRecvTime = timeGetTime();
+    character->LastRecvTime = timeGetTime();
 
-    *pMessagePacket >> MessageType;
+    *messagePacket >> messageType;
 
-    switch (MessageType) {
+    switch (messageType) {
         case kCsChatServer:
             break;
 
         case kCsChatReqLogin: {
-            if (pCharacter->SectorX != -1) {
+            if (character->SectorX != -1) {
                 pLogger->Log(L"Content", Logger::LogLevel::kError,
                              L"# Character Already Exist #");
                 pLogger->Crash();
             }
 
-            *pMessagePacket >> pCharacter->AccountNo;
-            pMessagePacket->GetData(pCharacter->ID, 20);
-            pMessagePacket->GetData(pCharacter->Nickname, 20);
-            BYTE Status;
-            MessageType = kCsChatResLogin;
+            *messagePacket >> character->AccountNo;
+            messagePacket->GetData(character->ID, 20);
+            messagePacket->GetData(character->Nickname, 20);
+            BYTE status;
+            messageType = kCsChatResLogin;
 
-            pMessagePacket->Clear();
+            messagePacket->Clear();
 
             //로그인 정보 확인 ... 성공 시
-            Status = 1;
+            status = 1;
 
             ////로그인 실패 시
-            //Status = 0;
+            //status = 0;
 
-            *pMessagePacket << MessageType << Status << pCharacter->AccountNo;
-            SendPacket(SessionID, pMessagePacket);
+            *messagePacket << messageType << status << character->AccountNo;
+            SendPacket(sessionID, messagePacket);
 
-            //if (Status == 0)
+            //if (status == 0)
             //{
             //	//세션 종료
             //}
         } break;
 
         case kCsChatReqSectorMove: {
-            INT64 AccountNo;
-            WORD SectorX;
-            WORD SectorY;
+            INT64 accountNo;
+            WORD sectorX;
+            WORD sectorY;
 
-            *pMessagePacket >> AccountNo >> SectorX >> SectorY;
+            *messagePacket >> accountNo >> sectorX >> sectorY;
 
-            if (pCharacter->AccountNo != AccountNo) {
+            if (character->AccountNo != accountNo) {
                 pLogger->Log(
                     L"Disconnect", Logger::LogLevel::kError,
                     L"# SectorMove # KillSession Called > AccountNo:%d, CharacterAccountNo:%d",
-                    AccountNo, pCharacter->AccountNo);
-                KillSession(pCharacter->SessionID_);
+                    accountNo, character->AccountNo);
+                KillSession(character->SessionID);
                 break;
             }
 
             //Sector 변경 시 리스트에서 Pop, Push 필요
-            if (SectorX >= 0 && SectorX < kSectorXMax && SectorY >= 0 &&
-                SectorY < kSectorYMax) {
-                if (pCharacter->SectorX !=
+            if (sectorX >= 0 && sectorX < kSectorXMax && sectorY >= 0 &&
+                sectorY < kSectorYMax) {
+                if (character->SectorX !=
                     -1)  // 기존에 섹터에 들어가있는경우 <> 로그인만 진행한 경우 -1로 초기화
                 {
                     std::list<stCharacter*>::iterator iter_SectorList;
                     for (iter_SectorList =
-                             SectorList[pCharacter->SectorY][pCharacter->SectorX].begin();
+                             SectorList[character->SectorY][character->SectorX].begin();
                          iter_SectorList !=
-                         SectorList[pCharacter->SectorY][pCharacter->SectorX].end();
+                         SectorList[character->SectorY][character->SectorX].end();
                          ++iter_SectorList) {
-                        if (*iter_SectorList == pCharacter) {
-                            SectorList[pCharacter->SectorY][pCharacter->SectorX].erase(
+                        if (*iter_SectorList == character) {
+                            SectorList[character->SectorY][character->SectorX].erase(
                                 iter_SectorList);
                             break;
                         }
                     }
                 }
-                pCharacter->SectorX = SectorX;
-                pCharacter->SectorY = SectorY;
+                character->SectorX = sectorX;
+                character->SectorY = sectorY;
 
-                SectorList[SectorY][SectorX].push_back(pCharacter);
+                SectorList[sectorY][sectorX].push_back(character);
             }
 
-            MessageType = kCsChatResSectorMove;
-            pMessagePacket->Clear();
-            *pMessagePacket << MessageType << pCharacter->AccountNo << pCharacter->SectorX
-                            << pCharacter->SectorY;
-            SendPacket(SessionID, pMessagePacket);
+            messageType = kCsChatResSectorMove;
+            messagePacket->Clear();
+            *messagePacket << messageType << character->AccountNo << character->SectorX
+                            << character->SectorY;
+            SendPacket(sessionID, messagePacket);
 
         } break;
 
         case kCsChatReqMessage: {
-            INT64 AccountNo;
-            WORD MessageLen;
+            INT64 accountNo;
+            WORD messageLen;
 
-            *pMessagePacket >> AccountNo >> MessageLen;
-            if (pCharacter->AccountNo != AccountNo) {
+            *messagePacket >> accountNo >> messageLen;
+            if (character->AccountNo != accountNo) {
                 pLogger->Log(
                     L"Disconnect", Logger::LogLevel::kError,
                     L"# SectorMove # KillSession Called > AccountNo:%d, CharacterAccountNo:%d",
-                    AccountNo, pCharacter->AccountNo);
-                KillSession(pCharacter->SessionID_);
+                    accountNo, character->AccountNo);
+                KillSession(character->SessionID);
                 break;
             }
 
-            if (MessageLen >= kMessageBufsize) {
+            if (messageLen >= kMessageBufsize) {
                 pLogger->Log(L"ASDF", Logger::LogLevel::kError, L"Message Len:%d",
-                             MessageLen);
+                             messageLen);
                 pLogger->Crash();
             }
 
-            pMessagePacket->GetData((char*)MessageBuf, MessageLen);
-            MessageBuf[MessageLen / 2] = L'\0';
+            messagePacket->GetData((char*)MessageBuf, messageLen);
+            MessageBuf[messageLen / 2] = L'\0';
 
-            MessageType = kCsChatResMessage;
-            pMessagePacket->Clear();
+            messageType = kCsChatResMessage;
+            messagePacket->Clear();
 
-            *pMessagePacket << MessageType << pCharacter->AccountNo;
-            pMessagePacket->PutData(pCharacter->ID, 20);
-            pMessagePacket->PutData(pCharacter->Nickname, 20);
+            *messagePacket << messageType << character->AccountNo;
+            messagePacket->PutData(character->ID, 20);
+            messagePacket->PutData(character->Nickname, 20);
 
-            *pMessagePacket << MessageLen;
-            pMessagePacket->PutData((char*)MessageBuf, MessageLen);
+            *messagePacket << messageLen;
+            messagePacket->PutData((char*)MessageBuf, messageLen);
 
-            SendPacketAround(pCharacter->SectorX, pCharacter->SectorY, pMessagePacket);
+            SendPacketAround(character->SectorX, character->SectorY, messagePacket);
         } break;
 
 
@@ -256,34 +256,34 @@ void Chat_Server::MessageControl(unsigned __int64 SessionID, CPacket* pMessagePa
             break;
 
         default: {
-            KillSession(SessionID);
+            KillSession(sessionID);
             pLogger->Log(
                 L"Content", Logger::LogLevel::kSystem,
-                L"# MessageType Undefined # MessageType:%d, AccountNo:%d, ID:%s, Nickname:%s",
-                MessageType, pCharacter->AccountNo, pCharacter->ID, pCharacter->Nickname);
+                L"# messageType Undefined # messageType:%d, AccountNo:%d, ID:%s, Nickname:%s",
+                messageType, character->AccountNo, character->ID, character->Nickname);
         } break;
     }
 
 
-    FreePacket(pMessagePacket);
+    FreePacket(messagePacket);
 }
 
-Chat_Server::stCharacter* Chat_Server::CreateCharacter(unsigned __int64 SessionID) {
-    if (CharacterMap.find(SessionID) != CharacterMap.end())
+Chat_Server::stCharacter* Chat_Server::CreateCharacter(unsigned __int64 sessionID) {
+    if (CharacterMap.find(sessionID) != CharacterMap.end())
         return NULL;
 
-    stCharacter* pCharacter = CharacterPool.Alloc();
-    pCharacter->SessionID_ = SessionID;
-    pCharacter->AccountNo = 0;
-    pCharacter->SectorX = -1;
-    pCharacter->LastRecvTime = timeGetTime();
-    CharacterMap.insert(std::make_pair(SessionID, pCharacter));
-    return pCharacter;
+    stCharacter* character = CharacterPool.Alloc();
+    character->SessionID = sessionID;
+    character->AccountNo = 0;
+    character->SectorX = -1;
+    character->LastRecvTime = timeGetTime();
+    CharacterMap.insert(std::make_pair(sessionID, character));
+    return character;
 }
 
 
-Chat_Server::stCharacter* Chat_Server::FindCharacter(unsigned __int64 SessionID) {
-    std::map<unsigned __int64, stCharacter*>::iterator iter_Find = CharacterMap.find(SessionID);
+Chat_Server::stCharacter* Chat_Server::FindCharacter(unsigned __int64 sessionID) {
+    std::map<unsigned __int64, stCharacter*>::iterator iter_Find = CharacterMap.find(sessionID);
     if (iter_Find == CharacterMap.end())
         return NULL;
     return iter_Find->second;
@@ -291,39 +291,39 @@ Chat_Server::stCharacter* Chat_Server::FindCharacter(unsigned __int64 SessionID)
 
 
 void Chat_Server::CheckHeartBeat(void) {
-    DWORD Cur_Time = timeGetTime();
+    DWORD curTime = timeGetTime();
     std::map<unsigned __int64, stCharacter*>::iterator iter_CharacterMap;
     for (iter_CharacterMap = CharacterMap.begin(); iter_CharacterMap != CharacterMap.end();
          ++iter_CharacterMap) {
-        stCharacter* pCharacter = iter_CharacterMap->second;
+        stCharacter* character = iter_CharacterMap->second;
 
-        if (Cur_Time - pCharacter->LastRecvTime > 40000) {
+        if (curTime - character->LastRecvTime > 40000) {
             pLogger->Log(L"Content", Logger::LogLevel::kSystem,
                          L"# Character TimeOut # AccountNo:%d, ID:%s, Nickname:%s",
-                         pCharacter->AccountNo, pCharacter->ID, pCharacter->Nickname);
-            KillSession(pCharacter->SessionID_);
+                         character->AccountNo, character->ID, character->Nickname);
+            KillSession(character->SessionID);
         }
     }
 }
 
-void Chat_Server::LeaveCharacter(unsigned __int64 SessionID) {
-    stCharacter* pCharacter = FindCharacter(SessionID);
-    if (pCharacter != NULL) {
-        CharacterMap.erase(SessionID);
+void Chat_Server::LeaveCharacter(unsigned __int64 sessionID) {
+    stCharacter* character = FindCharacter(sessionID);
+    if (character != NULL) {
+        CharacterMap.erase(sessionID);
 
-        if (pCharacter->SectorX >= 0 && pCharacter->SectorY >= 0) {
+        if (character->SectorX >= 0 && character->SectorY >= 0) {
             std::list<stCharacter*>::iterator iter_List;
-            for (iter_List = SectorList[pCharacter->SectorY][pCharacter->SectorX].begin();
-                 iter_List != SectorList[pCharacter->SectorY][pCharacter->SectorX].end();
+            for (iter_List = SectorList[character->SectorY][character->SectorX].begin();
+                 iter_List != SectorList[character->SectorY][character->SectorX].end();
                  ++iter_List) {
-                if (pCharacter == *iter_List) {
-                    SectorList[pCharacter->SectorY][pCharacter->SectorX].erase(iter_List);
+                if (character == *iter_List) {
+                    SectorList[character->SectorY][character->SectorX].erase(iter_List);
                     break;
                 }
             }
         }
 
-        CharacterPool.Free(pCharacter);
+        CharacterPool.Free(character);
     } else {
         pLogger->Log(L"Content", Logger::LogLevel::kError,
                      L"# LeaveSession # Character Not Exist");
@@ -331,26 +331,26 @@ void Chat_Server::LeaveCharacter(unsigned __int64 SessionID) {
     }
 }
 
-void Chat_Server::SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket) {
-    int iCntX, iCntY;
-    int TargetCnt = 0;
+void Chat_Server::SendPacketAround(int sectorX, int sectorY, CPacket* packet) {
+    int cntX, cntY;
+    int targetCnt = 0;
 
-    iSectorX--;
-    iSectorY--;
+    sectorX--;
+    sectorY--;
 
-    for (iCntY = 0; iCntY < 3; iCntY++) {
-        if (iSectorY + iCntY < 0 || iSectorY + iCntY >= kSectorYMax)
+    for (cntY = 0; cntY < 3; cntY++) {
+        if (sectorY + cntY < 0 || sectorY + cntY >= kSectorYMax)
             continue;
 
-        for (iCntX = 0; iCntX < 3; iCntX++) {
-            if (iSectorX + iCntX < 0 || iSectorX + iCntX >= kSectorXMax)
+        for (cntX = 0; cntX < 3; cntX++) {
+            if (sectorX + cntX < 0 || sectorX + cntX >= kSectorXMax)
                 continue;
 
             std::list<stCharacter*>::iterator iter_Sector;
-            for (iter_Sector = SectorList[iSectorY + iCntY][iSectorX + iCntX].begin();
-                 iter_Sector != SectorList[iSectorY + iCntY][iSectorX + iCntX].end();
+            for (iter_Sector = SectorList[sectorY + cntY][sectorX + cntX].begin();
+                 iter_Sector != SectorList[sectorY + cntY][sectorX + cntX].end();
                  ++iter_Sector) {
-                SendPacket((*iter_Sector)->SessionID_, pPacket);
+                SendPacket((*iter_Sector)->SessionID, packet);
             }
         }
     }
@@ -358,29 +358,29 @@ void Chat_Server::SendPacketAround(int iSectorX, int iSectorY, CPacket* pPacket)
 
 
 
-Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 SessionID,
-                                          CPacket* pPacket) {
-    MemoryPool_TLS_Node<stJob>* pJobPool = (MemoryPool_TLS_Node<stJob>*)TlsGetValue(
+Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 sessionID,
+                                          CPacket* packet) {
+    MemoryPool_TLS_Node<stJob>* jobPool = (MemoryPool_TLS_Node<stJob>*)TlsGetValue(
         MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTLSIndex());
-    if (pJobPool == NULL) {
-        pJobPool = new MemoryPool_TLS_Node<stJob>;
-        pJobPool->SetTLS();
+    if (jobPool == NULL) {
+        jobPool = new MemoryPool_TLS_Node<stJob>;
+        jobPool->SetTLS();
     }
-    stJob* pJob = pJobPool->Alloc();
-    pJob->type = type;
-    pJob->SessionID_ = SessionID;
-    pJob->Packet = pPacket;
+    stJob* job = jobPool->Alloc();
+    job->type = type;
+    job->SessionID = sessionID;
+    job->Packet = packet;
 
-    return pJob;
+    return job;
 }
 
 
-void Chat_Server::FreeJob(stJob* pJob) {
-    MemoryPool_TLS_Node<stJob>* pJobPool = (MemoryPool_TLS_Node<stJob>*)TlsGetValue(
+void Chat_Server::FreeJob(stJob* job) {
+    MemoryPool_TLS_Node<stJob>* jobPool = (MemoryPool_TLS_Node<stJob>*)TlsGetValue(
         MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTLSIndex());
-    if (pJobPool == NULL) {
-        pJobPool = new MemoryPool_TLS_Node<stJob>;
-        pJobPool->SetTLS();
+    if (jobPool == NULL) {
+        jobPool = new MemoryPool_TLS_Node<stJob>;
+        jobPool->SetTLS();
     }
-    pJobPool->Free(pJob);
+    jobPool->Free(job);
 }
