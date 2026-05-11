@@ -60,27 +60,27 @@ public:
     int GetThreadRunningTime(void) { return InterlockedExchange(&UpdateThreadSleepTime, 0); }
     int GetThreadRunningTPS(void) { return InterlockedExchange(&UpdateThreadRunningTPS, 0); }
     int GetJobTPS(void) { return InterlockedExchange(&JobTPS, 0); }
-    int Log_JobQueue_StackSize(void) { return JobQueue.GetStackSize(); }
-    int Log_JobQueue_TotalPool(void) { return JobQueue.GetPool_TotalSize(); }
+    int LogJobQueueStackSize(void) { return JobQueue.GetStackSize(); }
+    int LogJobQueueTotalPool(void) { return JobQueue.GetPool_TotalSize(); }
     int getGetPool_UseSize(void) { return JobQueue.GetPool_UseSize(); }
-    int Log_JobQueue_FreePool(void) { return JobQueue.GetPool_FreeSize(); }
-    int Log_GetCharacterPool_Total(void) { return CharacterPool.GetTotalMemCnt(); }
-    int Log_GetCharacterPool_Use(void) { return CharacterPool.GetUseMemCnt(); }
-    int Log_GetCharacterPool_Free(void) { return CharacterPool.GetFreeMemCnt(); }
+    int LogJobQueueFreePool(void) { return JobQueue.GetPool_FreeSize(); }
+    int LogGetCharacterPoolTotal(void) { return CharacterPool.GetTotalMemCnt(); }
+    int LogGetCharacterPoolUse(void) { return CharacterPool.GetUseMemCnt(); }
+    int LogGetCharacterPoolFree(void) { return CharacterPool.GetFreeMemCnt(); }
 
-    int Log_GetJobPoolTotal(void) {
+    int LogGetJobPoolTotal(void) {
         return TLSChunkMemoryPool<Job>::GetInstance()->GetTotalMemCnt();
     }
-    int Log_GetJobPoolUse(void) {
+    int LogGetJobPoolUse(void) {
         return TLSChunkMemoryPool<Job>::GetInstance()->GetUseMemCnt();
     }
-    int Log_GetJobPoolFree(void) {
+    int LogGetJobPoolFree(void) {
         return TLSChunkMemoryPool<Job>::GetInstance()->GetFreeMemCnt();
     }
 
 private:
-    static unsigned WINAPI UpdateThread_Chat_Field1(LPVOID lpThreadParameter);
-    static unsigned WINAPI TimerThread_Chat_5000(LPVOID lpThreadParameter);
+    static unsigned WINAPI UpdateThreadFunc(LPVOID lpThreadParameter);
+    static unsigned WINAPI HeartbeatTimerThread(LPVOID lpThreadParameter);
 
     inline Job* AllocJob(JobType type, unsigned __int64 sessionID, Packet* packet);
     inline void FreeJob(Job* job);
@@ -91,7 +91,7 @@ private:
     HANDLE JobEvent;
 
     unsigned int MaxUser;
-    DWORD Running_CurTime;
+    DWORD RunningCurTime;
 
     LockFreeQueue<Job*> JobQueue;
 

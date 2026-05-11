@@ -44,25 +44,25 @@ MonitoringTool::MonitoringTool(HANDLE process) {
     ProcessUser_ = 0;
     ProcessKernel_ = 0;
 
-    Processor_LastKernel.QuadPart = 0;
-    Processor_LastUser.QuadPart = 0;
-    Processor_LastIdle.QuadPart = 0;
+    ProcessorLastKernel.QuadPart = 0;
+    ProcessorLastUser.QuadPart = 0;
+    ProcessorLastIdle.QuadPart = 0;
 
-    Process_LastUser.QuadPart = 0;
-    Process_LastKernel.QuadPart = 0;
-    Process_LastTime.QuadPart = 0;
+    ProcessLastUser.QuadPart = 0;
+    ProcessLastKernel.QuadPart = 0;
+    ProcessLastTime.QuadPart = 0;
 
-    PdhOpenQuery(NULL, NULL, &Query_PDH);
+    PdhOpenQuery(NULL, NULL, &QueryPDH);
 
     WCHAR strBuf[1024];
     wsprintf(strBuf, L"\\Process(%s)\\Private Bytes", ptr);
-    PdhAddCounter(Query_PDH, strBuf, NULL, &Counter_ProcessUserAllocMemory);
+    PdhAddCounter(QueryPDH, strBuf, NULL, &CounterProcessUserAllocMemory);
 
     wsprintf(strBuf, L"\\Process(%s)\\Pool Nonpaged Bytes", ptr);
-    PdhAddCounter(Query_PDH, strBuf, NULL, &Counter_ProcessNonPagedMemory);
+    PdhAddCounter(QueryPDH, strBuf, NULL, &CounterProcessNonPagedMemory);
 
-    PdhAddCounter(Query_PDH, L"\\Memory\\Available MBytes", NULL, &Counter_AvailableMemory);
-    PdhAddCounter(Query_PDH, L"\\Memory\\Pool Nonpaged Bytes", NULL, &Counter_NonPagedMemory);
+    PdhAddCounter(QueryPDH, L"\\Memory\\Available MBytes", NULL, &CounterAvailableMemory);
+    PdhAddCounter(QueryPDH, L"\\Memory\\Pool Nonpaged Bytes", NULL, &CounterNonPagedMemory);
 
     /*
 	쿼리 추가필요 시 https://docs.microsoft.com/ko-kr/windows/win32/perfctrs/browsing-performance-counters를 통해 쿼리를 얻고 하드코딩
@@ -105,13 +105,13 @@ MonitoringTool::MonitoringTool(HANDLE process) {
         query[0] = L'\0';
         StringCbPrintf(query, sizeof(WCHAR) * 1024,
                        L"\\Network Interface(%s)\\Bytes Received/sec", cur);
-        PdhAddCounter(Query_PDH, query, NULL,
-                      &EthernetStruct[cnt].pdh_Counter_Network_RecvBytes);
+        PdhAddCounter(QueryPDH, query, NULL,
+                      &EthernetStruct[cnt].PDHCounterNetworkRecvBytes);
         query[0] = L'\0';
         StringCbPrintf(query, sizeof(WCHAR) * 1024, L"\\Network Interface(%s)\\Bytes Sent/sec",
                        cur);
-        PdhAddCounter(Query_PDH, query, NULL,
-                      &EthernetStruct[cnt].pdh_Counter_Network_SendBytes);
+        PdhAddCounter(QueryPDH, query, NULL,
+                      &EthernetStruct[cnt].PDHCounterNetworkSendBytes);
     }
 
 
@@ -134,9 +134,9 @@ void MonitoringTool::UpdateCPUTime() {
     if (GetSystemTimes((PFILETIME)&idle, (PFILETIME)&kernel, (PFILETIME)&user) == false)
         return;
 
-    ULONGLONG kernelDiff = kernel.QuadPart - Processor_LastKernel.QuadPart;
-    ULONGLONG userDiff = user.QuadPart - Processor_LastUser.QuadPart;
-    ULONGLONG idleDiff = idle.QuadPart - Processor_LastIdle.QuadPart;
+    ULONGLONG kernelDiff = kernel.QuadPart - ProcessorLastKernel.QuadPart;
+    ULONGLONG userDiff = user.QuadPart - ProcessorLastUser.QuadPart;
+    ULONGLONG idleDiff = idle.QuadPart - ProcessorLastIdle.QuadPart;
 
     ULONGLONG total = kernelDiff + userDiff;
     ULONGLONG timeDiff;
@@ -152,9 +152,9 @@ void MonitoringTool::UpdateCPUTime() {
         ProcessorKernel_ = (float)((double)(kernelDiff - idleDiff) / total * 100.0f);
     }
 
-    Processor_LastKernel = kernel;
-    Processor_LastUser = user;
-    Processor_LastIdle = idle;
+    ProcessorLastKernel = kernel;
+    ProcessorLastUser = user;
+    ProcessorLastIdle = idle;
 
 
     // 지정된 프로세스 사용률 갱신
@@ -180,9 +180,9 @@ void MonitoringTool::UpdateCPUTime() {
 
     //이전에 저장한 프로세스 시간과의 차를 구해 실제로 얼마의 시간이 지났는지 확인
     // 그리고 실제 지나온 시간으로 나누면 사용률이 나옴
-    timeDiff = nowTime.QuadPart - Process_LastTime.QuadPart;
-    userDiff = user.QuadPart - Process_LastUser.QuadPart;
-    kernelDiff = kernel.QuadPart - Process_LastKernel.QuadPart;
+    timeDiff = nowTime.QuadPart - ProcessLastTime.QuadPart;
+    userDiff = user.QuadPart - ProcessLastUser.QuadPart;
+    kernelDiff = kernel.QuadPart - ProcessLastKernel.QuadPart;
 
     total = kernelDiff + userDiff;
 
@@ -191,38 +191,38 @@ void MonitoringTool::UpdateCPUTime() {
         (float)(kernelDiff / (double)NumberOfProcessors / (double)timeDiff * 100.0f);
     ProcessUser_ = (float)(userDiff / (double)NumberOfProcessors / (double)timeDiff * 100.0f);
 
-    Process_LastTime = nowTime;
-    Process_LastKernel = kernel;
-    Process_LastUser = user;
+    ProcessLastTime = nowTime;
+    ProcessLastKernel = kernel;
+    ProcessLastUser = user;
 }
 
 
 void MonitoringTool::UpdateQuery() {
-    PdhCollectQueryData(Query_PDH);
+    PdhCollectQueryData(QueryPDH);
 
     PDH_FMT_COUNTERVALUE counterVal;
 
-    PdhGetFormattedCounterValue(Counter_ProcessUserAllocMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterProcessUserAllocMemory, PDH_FMT_LONG, NULL, &counterVal);
     ProcessUserAllocMemory_ = counterVal.longValue;
 
-    PdhGetFormattedCounterValue(Counter_ProcessNonPagedMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterProcessNonPagedMemory, PDH_FMT_LONG, NULL, &counterVal);
     ProcessNonPagedMemory_ = counterVal.longValue;
 
-    PdhGetFormattedCounterValue(Counter_AvailableMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterAvailableMemory, PDH_FMT_LONG, NULL, &counterVal);
     AvailableMemory_ = counterVal.longValue;
 
-    PdhGetFormattedCounterValue(Counter_NonPagedMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterNonPagedMemory, PDH_FMT_LONG, NULL, &counterVal);
     NonPagedMemory_ = counterVal.longValue;
 
     /////////////////////////////////////////////
     for (int cnt = 0; cnt < kPdhEthernetMax; cnt++) {
         if (EthernetStruct[cnt].Use) {
-            if (PdhGetFormattedCounterValue(EthernetStruct[cnt].pdh_Counter_Network_RecvBytes,
+            if (PdhGetFormattedCounterValue(EthernetStruct[cnt].PDHCounterNetworkRecvBytes,
                                             PDH_FMT_DOUBLE, NULL, &counterVal) == ERROR_SUCCESS)
-                pdh_value_Network_RecvBytes += counterVal.doubleValue;
-            if (PdhGetFormattedCounterValue(EthernetStruct[cnt].pdh_Counter_Network_SendBytes,
+                PDHValueNetworkRecvBytes += counterVal.doubleValue;
+            if (PdhGetFormattedCounterValue(EthernetStruct[cnt].PDHCounterNetworkSendBytes,
                                             PDH_FMT_DOUBLE, NULL, &counterVal) == ERROR_SUCCESS)
-                pdh_value_Network_SendBytes += counterVal.doubleValue;
+                PDHValueNetworkSendBytes += counterVal.doubleValue;
         }
     }
 }

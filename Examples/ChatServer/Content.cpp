@@ -14,7 +14,7 @@ ChatServer::ChatServer(int maxUser, bool heartBeatFlag) {
 
     MaxUser = maxUser;
 
-    Running_CurTime = 0;
+    RunningCurTime = 0;
 
     JobTPS = 0;
     UpdateThreadRunningTPS = 0;
@@ -23,10 +23,10 @@ ChatServer::ChatServer(int maxUser, bool heartBeatFlag) {
     pLogger = Logger::GetInstance();
 
     ContentThread =
-        (HANDLE)_beginthreadex(NULL, 0, UpdateThread_Chat_Field1, (LPVOID)this, 0, NULL);
+        (HANDLE)_beginthreadex(NULL, 0, UpdateThreadFunc, (LPVOID)this, 0, NULL);
     if (heartBeatFlag)
         TimerThread5000 =
-            (HANDLE)_beginthreadex(NULL, 0, TimerThread_Chat_5000, (LPVOID)this, 0, NULL);
+            (HANDLE)_beginthreadex(NULL, 0, HeartbeatTimerThread, (LPVOID)this, 0, NULL);
 }
 
 
@@ -56,7 +56,7 @@ void ChatServer::OnRecv(unsigned __int64 sessionID, Packet* packet) {
     SetEvent(JobEvent);
 }
 
-unsigned WINAPI ChatServer::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
+unsigned WINAPI ChatServer::HeartbeatTimerThread(LPVOID lpThreadParameter) {
     ChatServer* server = (ChatServer*)lpThreadParameter;
     Job* job;
 
@@ -72,7 +72,7 @@ unsigned WINAPI ChatServer::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
 }
 
 
-unsigned WINAPI ChatServer::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) {
+unsigned WINAPI ChatServer::UpdateThreadFunc(LPVOID lpThreadParameter) {
     ChatServer* server = (ChatServer*)lpThreadParameter;
     Job* job;
 
