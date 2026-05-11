@@ -1,8 +1,8 @@
 ﻿#include "CNet_Server.h"
 
 
-#include "MemoryPool_TLS.h"
-#include "LockFree_Stack.h"
+#include "TLSMemoryPool.h"
+#include "LockFreeStack.h"
 #include "Logger.h"
 #include "XorPacketEncoder.h"
 
@@ -15,7 +15,7 @@ constexpr BYTE kDefaultEncryptKey = 0x32;
 
 unsigned WINAPI CNet_Server::AcceptThread(LPVOID lpThreadParameter) {
     Logger* pLogger = Logger::GetInstance();
-    MemoryPool_TLS_Node<CPacket> packetPool;
+    TLSNodeMemoryPool<CPacket> packetPool;
     packetPool.SetTLS();
 
     CNet_Server* server = (CNet_Server*)lpThreadParameter;
@@ -80,7 +80,7 @@ unsigned WINAPI CNet_Server::AcceptThread(LPVOID lpThreadParameter) {
 
 unsigned WINAPI CNet_Server::WorkerThread(LPVOID lpThreadParameter) {
     Logger* pLogger = Logger::GetInstance();
-    MemoryPool_TLS_Node<CPacket> packetPool;
+    TLSNodeMemoryPool<CPacket> packetPool;
     packetPool.SetTLS();
 
     CNet_Server* server = (CNet_Server*)lpThreadParameter;
@@ -211,7 +211,7 @@ CNet_Server::CNet_Server(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncode
     AcceptTotal = 0;
     AcceptTPS = 0;
 
-    PacketPool = MemoryPool_TLS_Chunck<CPacket>::GetInstance();
+    PacketPool = TLSChunkMemoryPool<CPacket>::GetInstance();
 
     InitializeSRWLock(&srwLogTransmitMap);
 }
@@ -522,10 +522,10 @@ void CNet_Server::DisconnectSession(stSESSION* session) {
 
 
 CPacket* CNet_Server::AllocPacket(void) {
-    MemoryPool_TLS_Node<CPacket>* packetPool = (MemoryPool_TLS_Node<CPacket>*)TlsGetValue(
-        MemoryPool_TLS_Chunck<CPacket>::GetInstance()->GetTLSIndex());
+    TLSNodeMemoryPool<CPacket>* packetPool = (TLSNodeMemoryPool<CPacket>*)TlsGetValue(
+        TLSChunkMemoryPool<CPacket>::GetInstance()->GetTLSIndex());
     if (packetPool == NULL) {
-        packetPool = new MemoryPool_TLS_Node<CPacket>;
+        packetPool = new TLSNodeMemoryPool<CPacket>;
         packetPool->SetTLS();
     }
     CPacket* packet = packetPool->Alloc();
@@ -537,10 +537,10 @@ CPacket* CNet_Server::AllocPacket(void) {
 void CNet_Server::FreePacket(CPacket* packet) {
     if (packet->DecrementRef() != 0)
         return;
-    MemoryPool_TLS_Node<CPacket>* packetPool = (MemoryPool_TLS_Node<CPacket>*)TlsGetValue(
-        MemoryPool_TLS_Chunck<CPacket>::GetInstance()->GetTLSIndex());
+    TLSNodeMemoryPool<CPacket>* packetPool = (TLSNodeMemoryPool<CPacket>*)TlsGetValue(
+        TLSChunkMemoryPool<CPacket>::GetInstance()->GetTLSIndex());
     if (packetPool == NULL) {
-        packetPool = new MemoryPool_TLS_Node<CPacket>;
+        packetPool = new TLSNodeMemoryPool<CPacket>;
         packetPool->SetTLS();
     }
     packetPool->Free(packet);

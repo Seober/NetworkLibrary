@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include "LockFree_Stack.h"
-#include "MemoryPool_LF.h"
+#include "LockFreeStack.h"
+#include "LockFreeMemoryPool.h"
 
 template <typename T>
-class MemoryPool_TLS_Chunck {
+class TLSChunkMemoryPool {
 public:
     static constexpr int kChunkDefault = 100;
 
@@ -29,13 +29,13 @@ public:
     }
 
 
-    static MemoryPool_TLS_Chunck* GetInstance(void) {
+    static TLSChunkMemoryPool* GetInstance(void) {
         if (pChunckPool == NULL) {
             Lock();
             if (pChunckPool == NULL) {
 #pragma warning(push)
 #pragma warning(disable : 4316)  // Phase 3 C++17 진입(/Zc:alignedNew) 시 제거
-                pChunckPool = new MemoryPool_TLS_Chunck;
+                pChunckPool = new TLSChunkMemoryPool;
 #pragma warning(pop)
                 atexit(Destroy);
             }
@@ -77,14 +77,14 @@ public:
     }
 
 private:
-    MemoryPool_TLS_Chunck() {
+    TLSChunkMemoryPool() {
         TLS_idx = TlsAlloc();
 
         TotalSize = 0;
         UseSize = 0;
         FreeSize = 0;
     }
-    ~MemoryPool_TLS_Chunck() {
+    ~TLSChunkMemoryPool() {
         TlsFree(TLS_idx);
     }
 
@@ -102,7 +102,7 @@ private:
     }
 
 private:
-    LockFree_Stack<void*> ChunckStack;
+    LockFreeStack<void*> ChunckStack;
     DWORD TLS_idx;
 
     long TotalSize;
@@ -110,20 +110,20 @@ private:
     long FreeSize;
 
     static long Key_Singleton;
-    static MemoryPool_TLS_Chunck* pChunckPool;
+    static TLSChunkMemoryPool* pChunckPool;
 };
 
 template <typename T>
-MemoryPool_TLS_Chunck<T>* MemoryPool_TLS_Chunck<T>::pChunckPool = NULL;
+TLSChunkMemoryPool<T>* TLSChunkMemoryPool<T>::pChunckPool = NULL;
 
 template <typename T>
-long MemoryPool_TLS_Chunck<T>::Key_Singleton = 0;
+long TLSChunkMemoryPool<T>::Key_Singleton = 0;
 
 //////////////////////////////////////////////////////////////////////
 
 
 template <typename T>
-class MemoryPool_TLS_Node {
+class TLSNodeMemoryPool {
 public:
     using PadType = unsigned __int64;
     static constexpr PadType kPadUnderflow = 0xdfdfdfdfdfdfdfdf;
@@ -136,14 +136,14 @@ public:
         PadType Pad_OverFlow = kPadOverflow;
     };
 
-    MemoryPool_TLS_Node() {
-        ChunckPool = MemoryPool_TLS_Chunck<T>::GetInstance();
+    TLSNodeMemoryPool() {
+        ChunckPool = TLSChunkMemoryPool<T>::GetInstance();
         Head = NULL;
         FreeNodeCnt = 0;
         ChunckSize = ChunckPool->GetChunckSize();
     }
 
-    ~MemoryPool_TLS_Node() {
+    ~TLSNodeMemoryPool() {
         while (Head != NULL) {
             stNode* Next = Head->Next;
             delete Head;
@@ -202,7 +202,7 @@ private:
     }
 
 private:
-    MemoryPool_TLS_Chunck<T>* ChunckPool;
+    TLSChunkMemoryPool<T>* ChunckPool;
 
     stNode* Head;
 

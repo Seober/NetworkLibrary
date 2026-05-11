@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include <windows.h>
 
-#include "MemoryPool_TLS.h"
+#include "TLSMemoryPool.h"
 //#define LFQ_DEBUG
 
 template <typename T>
-class LockFree_Queue_TLS {
+class LockFreeQueue {
 public:
     static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
 
@@ -55,7 +55,7 @@ private:
     };
 
 public:
-    LockFree_Queue_TLS(void);
+    LockFreeQueue(void);
 
     void Enqueue(T data);
     bool Dequeue(T& tData);
@@ -66,30 +66,30 @@ public:
 
     ////////////////////////////////////////////
     static int Log_GetTotalMemCnt(void) {
-        return MemoryPool_TLS_Chunck<stNode>::GetInstance()->Log_GetTotalMemCnt();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->Log_GetTotalMemCnt();
     }
 
     static int GetStackSize(void) {
-        return MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetStackSize();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->GetStackSize();
     }
     static int GetPool_TotalSize(void) {
-        return MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetPoolCnt_Total();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->GetPoolCnt_Total();
     }
     static int GetPool_UseSize(void) {
-        return MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetPoolCnt_Use();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->GetPoolCnt_Use();
     }
     static int GetPool_FreeSize(void) {
-        return MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetPoolCnt_Free();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->GetPoolCnt_Free();
     }
 
 
 private:
     inline WORD GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }
     inline stNode* AllocNode(void) {
-        MemoryPool_TLS_Node<stNode>* nodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(
-            MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetTLSIndex());
+        TLSNodeMemoryPool<stNode>* nodePool = (TLSNodeMemoryPool<stNode>*)TlsGetValue(
+            TLSChunkMemoryPool<stNode>::GetInstance()->GetTLSIndex());
         if (nodePool == NULL) {
-            nodePool = new MemoryPool_TLS_Node<stNode>;
+            nodePool = new TLSNodeMemoryPool<stNode>;
             nodePool->SetTLS();
         }
 
@@ -97,10 +97,10 @@ private:
     }
 
     inline void FreeNode(stNode* node) {
-        MemoryPool_TLS_Node<stNode>* nodePool = (MemoryPool_TLS_Node<stNode>*)TlsGetValue(
-            MemoryPool_TLS_Chunck<stNode>::GetInstance()->GetTLSIndex());
+        TLSNodeMemoryPool<stNode>* nodePool = (TLSNodeMemoryPool<stNode>*)TlsGetValue(
+            TLSChunkMemoryPool<stNode>::GetInstance()->GetTLSIndex());
         if (nodePool == NULL) {
-            nodePool = new MemoryPool_TLS_Node<stNode>;
+            nodePool = new TLSNodeMemoryPool<stNode>;
             nodePool->SetTLS();
         }
         nodePool->Free(node);
@@ -116,11 +116,11 @@ private:
 
 
 template <typename T>
-LockFree_Queue_TLS<T>::LockFree_Queue_TLS(void) {
+LockFreeQueue<T>::LockFreeQueue(void) {
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
     if (SystemInfo.lpMaximumApplicationAddress != (void*)kMaxMemoryRange) {
-        wprintf(L"LockFree_Queue_TLS: user-space memory range mismatch (47-bit pointer encoding may break)\n");
+        wprintf(L"LockFreeQueue: user-space memory range mismatch (47-bit pointer encoding may break)\n");
         return;
     }
 
@@ -135,7 +135,7 @@ LockFree_Queue_TLS<T>::LockFree_Queue_TLS(void) {
 }
 
 template <typename T>
-void LockFree_Queue_TLS<T>::Enqueue(T data) {
+void LockFreeQueue<T>::Enqueue(T data) {
     stNode_TAGED OldTail;
     stNode_TAGED Next;
     stNode_TAGED NewNode = AllocNode();
@@ -174,7 +174,7 @@ void LockFree_Queue_TLS<T>::Enqueue(T data) {
 
 
 template <typename T>
-bool LockFree_Queue_TLS<T>::Dequeue(T& tData) {
+bool LockFreeQueue<T>::Dequeue(T& tData) {
     if (InterlockedExchangeAdd(&Size, -1) <= 0) {
         InterlockedExchangeAdd(&Size, 1);
         tData = NULL;
@@ -214,7 +214,7 @@ bool LockFree_Queue_TLS<T>::Dequeue(T& tData) {
 
 
 template <typename T>
-void LockFree_Queue_TLS<T>::Clear(void) {
+void LockFreeQueue<T>::Clear(void) {
     stNode_TAGED tmpHead;
     stNode_TAGED Next;
 

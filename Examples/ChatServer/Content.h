@@ -69,13 +69,13 @@ public:
     int Log_GetCharacterPool_Free(void) { return CharacterPool.GetFreeMemCnt(); }
 
     int Log_GetJobPoolTotal(void) {
-        return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTotalMemCnt();
+        return TLSChunkMemoryPool<stJob>::GetInstance()->GetTotalMemCnt();
     }
     int Log_GetJobPoolUse(void) {
-        return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetUseMemCnt();
+        return TLSChunkMemoryPool<stJob>::GetInstance()->GetUseMemCnt();
     }
     int Log_GetJobPoolFree(void) {
-        return MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetFreeMemCnt();
+        return TLSChunkMemoryPool<stJob>::GetInstance()->GetFreeMemCnt();
     }
 
 private:
@@ -93,9 +93,9 @@ private:
     unsigned int MaxUser;
     DWORD Running_CurTime;
 
-    LockFree_Queue_TLS<stJob*> JobQueue;
+    LockFreeQueue<stJob*> JobQueue;
 
-    MemoryPool_LF<stCharacter> CharacterPool;
+    LockFreeMemoryPool<stCharacter> CharacterPool;
     std::map<unsigned __int64, stCharacter*> CharacterMap;
     std::list<stCharacter*> SectorList[kSectorYMax][kSectorXMax];
 

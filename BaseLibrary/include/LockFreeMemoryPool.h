@@ -3,7 +3,7 @@
 #include <windows.h>
 
 template <typename T>
-class MemoryPool_LF {
+class LockFreeMemoryPool {
 public:
     static constexpr int kDefaultPool = 300;
     static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
@@ -46,8 +46,8 @@ public:
         inline stNode* operator->(void) { return (stNode*)Bit.Index; }
     };
 
-    MemoryPool_LF(int initSize = kDefaultPool);
-    ~MemoryPool_LF(void) {
+    LockFreeMemoryPool(int initSize = kDefaultPool);
+    ~LockFreeMemoryPool(void) {
         if (Cnt_TotalNode == Cnt_FreeNode + Cnt_UseNode)
             Clear_MemoryPool();
     }
@@ -103,11 +103,11 @@ private:
 
 
 template <typename T>
-MemoryPool_LF<T>::MemoryPool_LF(int initSize) {
+LockFreeMemoryPool<T>::LockFreeMemoryPool(int initSize) {
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
     if (SystemInfo.lpMaximumApplicationAddress != (PVOID)kMaxMemoryRange) {
-        wprintf(L"MemoryPool_LF: user-space memory range mismatch (47-bit pointer encoding may break)\n");
+        wprintf(L"LockFreeMemoryPool: user-space memory range mismatch (47-bit pointer encoding may break)\n");
         return;
     }
 
@@ -122,7 +122,7 @@ MemoryPool_LF<T>::MemoryPool_LF(int initSize) {
 }
 
 template <typename T>
-void MemoryPool_LF<T>::Clear_MemoryPool(void) {
+void LockFreeMemoryPool<T>::Clear_MemoryPool(void) {
     while (1) {
         stNode* deleteNode = PopFromFreeNode();
         if (deleteNode == NULL)
@@ -137,7 +137,7 @@ void MemoryPool_LF<T>::Clear_MemoryPool(void) {
 
 
 template <typename T>
-void MemoryPool_LF<T>::NewNode(void) {
+void LockFreeMemoryPool<T>::NewNode(void) {
     stNode* node = new stNode;
 
     PushtoFreeNode(node);
@@ -146,7 +146,7 @@ void MemoryPool_LF<T>::NewNode(void) {
 
 
 template <typename T>
-T* MemoryPool_LF<T>::Alloc(void) {
+T* LockFreeMemoryPool<T>::Alloc(void) {
     stNode* node = PopFromFreeNode();
     while (!node) {
         for (int i = 0; i < MemoryAllocSize; i++)
@@ -160,7 +160,7 @@ T* MemoryPool_LF<T>::Alloc(void) {
 
 
 template <typename T>
-void MemoryPool_LF<T>::Free(T* target) {
+void LockFreeMemoryPool<T>::Free(T* target) {
     stNode* node = (stNode*)((char*)target - sizeof(PadType));
     if (node->Pad_UnderFlow != kPadUnderflow ||
         node->Pad_OverFlow != kPadOverflow) {
@@ -173,7 +173,7 @@ void MemoryPool_LF<T>::Free(T* target) {
 }
 
 template <typename T>
-void MemoryPool_LF<T>::PushtoFreeNode(stNode* node) {
+void LockFreeMemoryPool<T>::PushtoFreeNode(stNode* node) {
     stNode_TAGED OldTop;
     stNode_TAGED NewTop = node;
     NewTop.SetTag(GetTagCnt());

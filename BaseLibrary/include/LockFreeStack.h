@@ -2,10 +2,10 @@
 #include <windows.h>
 #include <map>
 
-#include "MemoryPool_LF.h"
+#include "LockFreeMemoryPool.h"
 
 template <typename T>
-class LockFree_Stack {
+class LockFreeStack {
 public:
     static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
 
@@ -41,7 +41,7 @@ public:
         inline stNode* operator->(void) { return (stNode*)Bit.Index; }
     };
 
-    LockFree_Stack(void);
+    LockFreeStack(void);
 
     void Push(T tData);
     bool Pop(T& tData);
@@ -59,7 +59,7 @@ private:
 
     stNode_TAGED Top;
 
-    MemoryPool_LF<stNode> NodePool;
+    LockFreeMemoryPool<stNode> NodePool;
 
 
     alignas(64) long Size;
@@ -68,21 +68,21 @@ private:
 
 
 template <typename T>
-LockFree_Stack<T>::LockFree_Stack(void) {
+LockFreeStack<T>::LockFreeStack(void) {
     Size = 0;
     TagCnt = 0;
 
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
     if (SystemInfo.lpMaximumApplicationAddress != (void*)kMaxMemoryRange) {
-        wprintf(L"LockFree_Stack: user-space memory range mismatch (47-bit pointer encoding may break)\n");
+        wprintf(L"LockFreeStack: user-space memory range mismatch (47-bit pointer encoding may break)\n");
         return;
     }
 }
 
 
 template <typename T>
-void LockFree_Stack<T>::Push(T tData) {
+void LockFreeStack<T>::Push(T tData) {
     stNode_TAGED OldTop;
     stNode_TAGED NewTop = NodePool.Alloc();
     NewTop.SetTag(GetTagCnt());
@@ -99,7 +99,7 @@ void LockFree_Stack<T>::Push(T tData) {
 
 
 template <typename T>
-T LockFree_Stack<T>::Pop(void) {
+T LockFreeStack<T>::Pop(void) {
     stNode_TAGED OldTop;
     stNode_TAGED NewTop;
     NewTop.SetTag(GetTagCnt());
@@ -122,7 +122,7 @@ T LockFree_Stack<T>::Pop(void) {
 
 
 template <typename T>
-bool LockFree_Stack<T>::Pop(T& tData) {
+bool LockFreeStack<T>::Pop(T& tData) {
     stNode_TAGED OldTop;
     stNode_TAGED NewTop;
     NewTop.SetTag(GetTagCnt());

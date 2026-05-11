@@ -10,7 +10,7 @@
 #include <unordered_map>
 
 #include "CPacket.h"
-#include "LockFree_Queue_TLS.h"
+#include "LockFreeQueue.h"
 #include "IPacketEncoder.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ public:
         volatile DWORD SendFlag;
         DWORD SendPacketCnt;
 
-        LockFree_Queue_TLS<CPacket*> SendQ;
+        LockFreeQueue<CPacket*> SendQ;
         CPacket RecvQ{4096};
 
         CPacket* SendBuffer[1000];
@@ -134,8 +134,8 @@ private:
     alignas(64) unsigned __int64 AcceptTotal;
     DWORD AcceptTPS;
 
-    MemoryPool_TLS_Chunck<CPacket>* PacketPool;
-    LockFree_Stack<stSESSION*> FreeSessionStack;
+    TLSChunkMemoryPool<CPacket>* PacketPool;
+    LockFreeStack<stSESSION*> FreeSessionStack;
 
     SRWLOCK srwLogTransmitMap;
     std::unordered_map<DWORD, DWORD*>

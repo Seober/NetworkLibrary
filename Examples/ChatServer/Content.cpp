@@ -2,7 +2,7 @@
 #include "Content.h"
 #include "ChatProtocol.h"
 
-#include "LockFree_Queue_TLS.h"
+#include "LockFreeQueue.h"
 
 constexpr int kMessageBufsize = 1000;
 WCHAR MessageBuf[kMessageBufsize];
@@ -360,10 +360,10 @@ void Chat_Server::SendPacketAround(int sectorX, int sectorY, CPacket* packet) {
 
 Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 sessionID,
                                           CPacket* packet) {
-    MemoryPool_TLS_Node<stJob>* jobPool = (MemoryPool_TLS_Node<stJob>*)TlsGetValue(
-        MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTLSIndex());
+    TLSNodeMemoryPool<stJob>* jobPool = (TLSNodeMemoryPool<stJob>*)TlsGetValue(
+        TLSChunkMemoryPool<stJob>::GetInstance()->GetTLSIndex());
     if (jobPool == NULL) {
-        jobPool = new MemoryPool_TLS_Node<stJob>;
+        jobPool = new TLSNodeMemoryPool<stJob>;
         jobPool->SetTLS();
     }
     stJob* job = jobPool->Alloc();
@@ -376,10 +376,10 @@ Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 session
 
 
 void Chat_Server::FreeJob(stJob* job) {
-    MemoryPool_TLS_Node<stJob>* jobPool = (MemoryPool_TLS_Node<stJob>*)TlsGetValue(
-        MemoryPool_TLS_Chunck<stJob>::GetInstance()->GetTLSIndex());
+    TLSNodeMemoryPool<stJob>* jobPool = (TLSNodeMemoryPool<stJob>*)TlsGetValue(
+        TLSChunkMemoryPool<stJob>::GetInstance()->GetTLSIndex());
     if (jobPool == NULL) {
-        jobPool = new MemoryPool_TLS_Node<stJob>;
+        jobPool = new TLSNodeMemoryPool<stJob>;
         jobPool->SetTLS();
     }
     jobPool->Free(job);
