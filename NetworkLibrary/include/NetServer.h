@@ -87,9 +87,9 @@ public:
     int Log_GetPacketPoolFree(void) { return PacketPool->GetFreeMemCnt(); }
 
     int GetStackSize(void) { return PacketPool->GetStackSize(); }
-    int GetPoolCnt_Total(void) { return PacketPool->GetPoolCnt_Total(); }
-    int GetPoolCnt_Use(void) { return PacketPool->GetPoolCnt_Use(); }
-    int GetPoolCnt_Free(void) { return PacketPool->GetPoolCnt_Free(); }
+    int GetTotalPoolCnt(void) { return PacketPool->GetTotalPoolCnt(); }
+    int GetUsePoolCnt(void) { return PacketPool->GetUsePoolCnt(); }
+    int GetFreePoolCnt(void) { return PacketPool->GetFreePoolCnt(); }
 
     void AddRecvBytes(DWORD recvBytes);
     void AddRecvPacket(void);

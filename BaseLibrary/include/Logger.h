@@ -29,17 +29,17 @@ public:
 
     void Crash(void) { Crasher.Crash(); }
 
-    void SetLogLevel(LogLevel level) { Log_Level = level; }
+    void SetLogLevel(LogLevel level) { MinLevel = level; }
 
 
 private:
     Logger();
 
     static void Lock(void) {
-        while (InterlockedExchange(&Key_Singleton, 1) != 0)
+        while (InterlockedExchange(&KeySingleton, 1) != 0)
             ;
     }
-    static void Unlock(void) { Key_Singleton = 0; }
+    static void Unlock(void) { KeySingleton = 0; }
 
     static void Destroy(void) {
         delete pLogger;
@@ -50,11 +50,11 @@ private:
 private:
     CrashDump Crasher;
 
-    LogLevel Log_Level;
+    LogLevel MinLevel;
 
     unsigned __int64 LogCnt;
 
 
-    static long Key_Singleton;
+    static long KeySingleton;
     static Logger* pLogger;
 };

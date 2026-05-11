@@ -46,9 +46,9 @@ public:
     }
 
     DWORD GetTLSIndex(void) {
-        return TLS_idx;
+        return TLSIdx;
     }
-    int GetChunckSize(void) {
+    int GetChunkSize(void) {
         return kChunkDefault;
     }
 
@@ -66,34 +66,34 @@ public:
     int GetStackSize(void) {
         return ChunckStack.GetUseSize();
     }
-    int GetPoolCnt_Total(void) {
+    int GetTotalPoolCnt(void) {
         return ChunckStack.GetTotalPool();
     }
-    int GetPoolCnt_Use(void) {
+    int GetUsePoolCnt(void) {
         return ChunckStack.GetUsePool();
     }
-    int GetPoolCnt_Free(void) {
+    int GetFreePoolCnt(void) {
         return ChunckStack.GetFreePool();
     }
 
 private:
     TLSChunkMemoryPool() {
-        TLS_idx = TlsAlloc();
+        TLSIdx = TlsAlloc();
 
         TotalSize = 0;
         UseSize = 0;
         FreeSize = 0;
     }
     ~TLSChunkMemoryPool() {
-        TlsFree(TLS_idx);
+        TlsFree(TLSIdx);
     }
 
     static void Lock() {
-        while (InterlockedExchange(&Key_Singleton, 1) != 0)
+        while (InterlockedExchange(&KeySingleton, 1) != 0)
             ;
     }
     static void Unlock() {
-        Key_Singleton = 0;
+        KeySingleton = 0;
     }
 
     static void Destroy(void) {
@@ -103,13 +103,13 @@ private:
 
 private:
     LockFreeStack<void*> ChunckStack;
-    DWORD TLS_idx;
+    DWORD TLSIdx;
 
     long TotalSize;
     long UseSize;
     long FreeSize;
 
-    static long Key_Singleton;
+    static long KeySingleton;
     static TLSChunkMemoryPool* pChunckPool;
 };
 
@@ -117,7 +117,7 @@ template <typename T>
 TLSChunkMemoryPool<T>* TLSChunkMemoryPool<T>::pChunckPool = NULL;
 
 template <typename T>
-long TLSChunkMemoryPool<T>::Key_Singleton = 0;
+long TLSChunkMemoryPool<T>::KeySingleton = 0;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -130,17 +130,17 @@ public:
     static constexpr PadType kPadOverflow = 0xefefefefefefefef;
 
     struct stNode {
-        PadType Pad_UnderFlow = kPadUnderflow;
+        PadType PadUnderflow = kPadUnderflow;
         T Data;
         stNode* Next = NULL;
-        PadType Pad_OverFlow = kPadOverflow;
+        PadType PadOverflow = kPadOverflow;
     };
 
     TLSNodeMemoryPool() {
         ChunckPool = TLSChunkMemoryPool<T>::GetInstance();
         Head = NULL;
         FreeNodeCnt = 0;
-        ChunckSize = ChunckPool->GetChunckSize();
+        ChunckSize = ChunckPool->GetChunkSize();
     }
 
     ~TLSNodeMemoryPool() {
@@ -171,8 +171,8 @@ public:
 
     void Free(T* target) {
         stNode* node = (stNode*)((char*)target - sizeof(PadType));
-        if (node->Pad_UnderFlow != kPadUnderflow ||
-            node->Pad_OverFlow != kPadOverflow) {
+        if (node->PadUnderflow != kPadUnderflow ||
+            node->PadOverflow != kPadOverflow) {
             char* Err_Make = NULL;
             *Err_Make = 10;
         }

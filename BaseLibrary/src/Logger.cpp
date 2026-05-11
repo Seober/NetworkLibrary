@@ -1,18 +1,18 @@
 ﻿#include "Logger.h"
 #include <strsafe.h>
 
-long Logger::Key_Singleton = 0;
+long Logger::KeySingleton = 0;
 Logger* Logger::pLogger = NULL;
 
 
 Logger::Logger() {
-    Log_Level = LogLevel::kDebug;
+    MinLevel = LogLevel::kDebug;
     LogCnt = 0;
 }
 
 
 void Logger::Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, ...) {
-    if (Log_Level <= level) {
+    if (MinLevel <= level) {
         unsigned __int64 logCnt = InterlockedIncrement(&LogCnt);
 
         int retval_FileName;

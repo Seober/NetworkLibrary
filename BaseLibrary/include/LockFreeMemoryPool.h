@@ -13,10 +13,10 @@ public:
     static constexpr PadType kPadOverflow = 0xefefefefefefefef;
 
     struct stNode {  //abcdef
-        PadType Pad_UnderFlow = kPadUnderflow;
+        PadType PadUnderflow = kPadUnderflow;
         T Data;
         stNode* Next = NULL;
-        PadType Pad_OverFlow = kPadOverflow;
+        PadType PadOverflow = kPadOverflow;
     };
 
     struct BitField {
@@ -48,8 +48,8 @@ public:
 
     LockFreeMemoryPool(int initSize = kDefaultPool);
     ~LockFreeMemoryPool(void) {
-        if (Cnt_TotalNode == Cnt_FreeNode + Cnt_UseNode)
-            Clear_MemoryPool();
+        if (TotalNodeCnt == FreeNodeCnt + UseNodeCnt)
+            ClearMemoryPool();
     }
 
     inline T* Alloc(void);
@@ -57,12 +57,12 @@ public:
 
     inline void Free(T* target);
 
-    int GetUseMemCnt(void) { return Cnt_UseNode; }
-    int GetFreeMemCnt(void) { return Cnt_FreeNode; }
-    int GetTotalMemCnt(void) { return Cnt_TotalNode; }
+    int GetUseMemCnt(void) { return UseNodeCnt; }
+    int GetFreeMemCnt(void) { return FreeNodeCnt; }
+    int GetTotalMemCnt(void) { return TotalNodeCnt; }
 
 private:
-    inline void Clear_MemoryPool(void);
+    inline void ClearMemoryPool(void);
     inline void NewNode(void);
     inline WORD GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }
 
@@ -72,29 +72,29 @@ private:
         stNode_TAGED NewTop;
         NewTop.SetTag(GetTagCnt());
 
-        if (InterlockedExchangeAdd(&Cnt_FreeNode, -1) <= 0) {
-            InterlockedExchangeAdd(&Cnt_FreeNode, 1);
+        if (InterlockedExchangeAdd(&FreeNodeCnt, -1) <= 0) {
+            InterlockedExchangeAdd(&FreeNodeCnt, 1);
             return NULL;
         }
 
         do {
-            OldTop = Head_FreeNode;
+            OldTop = HeadFreeNode;
 
             NewTop = OldTop->Next;
 
-        } while (!Head_FreeNode.CAS(NewTop.Data, OldTop.Data));
+        } while (!HeadFreeNode.CAS(NewTop.Data, OldTop.Data));
 
         return OldTop.GetPtr();
     }
 
 
 private:
-    stNode_TAGED Head_FreeNode;
+    stNode_TAGED HeadFreeNode;
 
-    long Cnt_FreeNode;
-    long Cnt_UseNode;
+    long FreeNodeCnt;
+    long UseNodeCnt;
 
-    long Cnt_TotalNode;
+    long TotalNodeCnt;
 
     long MemoryAllocSize;
 
@@ -113,16 +113,16 @@ LockFreeMemoryPool<T>::LockFreeMemoryPool(int initSize) {
 
     MemoryAllocSize = initSize;
     TagCnt = 0;
-    Cnt_FreeNode = 0;
-    Cnt_UseNode = 0;
-    Cnt_TotalNode = 0;
+    FreeNodeCnt = 0;
+    UseNodeCnt = 0;
+    TotalNodeCnt = 0;
 
     for (int i = 0; i < MemoryAllocSize; i++)
         NewNode();
 }
 
 template <typename T>
-void LockFreeMemoryPool<T>::Clear_MemoryPool(void) {
+void LockFreeMemoryPool<T>::ClearMemoryPool(void) {
     while (1) {
         stNode* deleteNode = PopFromFreeNode();
         if (deleteNode == NULL)
@@ -130,9 +130,9 @@ void LockFreeMemoryPool<T>::Clear_MemoryPool(void) {
         delete deleteNode;
     }
 
-    Cnt_FreeNode = 0;
-    Cnt_UseNode = 0;
-    Cnt_TotalNode = 0;
+    FreeNodeCnt = 0;
+    UseNodeCnt = 0;
+    TotalNodeCnt = 0;
 }
 
 
@@ -141,7 +141,7 @@ void LockFreeMemoryPool<T>::NewNode(void) {
     stNode* node = new stNode;
 
     PushtoFreeNode(node);
-    InterlockedIncrement(&Cnt_TotalNode);
+    InterlockedIncrement(&TotalNodeCnt);
 }
 
 
@@ -153,7 +153,7 @@ T* LockFreeMemoryPool<T>::Alloc(void) {
             NewNode();
         node = PopFromFreeNode();
     }
-    InterlockedIncrement(&Cnt_UseNode);
+    InterlockedIncrement(&UseNodeCnt);
 
     return &node->Data;
 }
@@ -162,14 +162,14 @@ T* LockFreeMemoryPool<T>::Alloc(void) {
 template <typename T>
 void LockFreeMemoryPool<T>::Free(T* target) {
     stNode* node = (stNode*)((char*)target - sizeof(PadType));
-    if (node->Pad_UnderFlow != kPadUnderflow ||
-        node->Pad_OverFlow != kPadOverflow) {
+    if (node->PadUnderflow != kPadUnderflow ||
+        node->PadOverflow != kPadOverflow) {
         char* Err_Make = NULL;
         *Err_Make = 10;
     }
 
     PushtoFreeNode(node);
-    InterlockedDecrement(&Cnt_UseNode);
+    InterlockedDecrement(&UseNodeCnt);
 }
 
 template <typename T>
@@ -178,10 +178,10 @@ void LockFreeMemoryPool<T>::PushtoFreeNode(stNode* node) {
     stNode_TAGED NewTop = node;
     NewTop.SetTag(GetTagCnt());
     do {
-        OldTop = Head_FreeNode;
+        OldTop = HeadFreeNode;
         NewTop->Next = OldTop.GetPtr();
 
-    } while (!Head_FreeNode.CAS(NewTop.Data, OldTop.Data));
+    } while (!HeadFreeNode.CAS(NewTop.Data, OldTop.Data));
 
-    InterlockedIncrement(&Cnt_FreeNode);
+    InterlockedIncrement(&FreeNodeCnt);
 }

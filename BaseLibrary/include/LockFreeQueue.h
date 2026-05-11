@@ -73,13 +73,13 @@ public:
         return TLSChunkMemoryPool<stNode>::GetInstance()->GetStackSize();
     }
     static int GetPool_TotalSize(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->GetPoolCnt_Total();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->GetTotalPoolCnt();
     }
     static int GetPool_UseSize(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->GetPoolCnt_Use();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->GetUsePoolCnt();
     }
     static int GetPool_FreeSize(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->GetPoolCnt_Free();
+        return TLSChunkMemoryPool<stNode>::GetInstance()->GetFreePoolCnt();
     }
 
 
