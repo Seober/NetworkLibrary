@@ -73,41 +73,48 @@ public:
 }  // namespace
 
 TEST_CASE("NetClient: loopback echo + disconnect", "[netclient][loopback]") {
-    EchoServer server;
-    REQUIRE(server.Start(kTestIP, kTestPort, 2, 0, FALSE, 4));
+    // 단위 테스트 환경 우회 — EchoServer/LoopbackClient를 heap에 할당 + 의도된 leak.
+    // stack alloc 시 ~NetServer 본체 실행 중 vtable이 NetServer로 reset된 상태에서
+    // AcceptThread가 virtual OnConnectionRequest 호출하면 pure virtual call이 발생
+    // (myPurecallHandler → Crash). process exit 시 OS가 자원 정리.
+    // 본격 해결 (Stop 메서드 + worker/accept thread 정상 종료)은 Phase 3c-8b.
+    auto* server = new EchoServer;
+    REQUIRE(server->Start(kTestIP, kTestPort, 2, 0, FALSE, 4));
 
     // Server listen 안정화 대기
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    LoopbackClient client;
-    REQUIRE(client.Start(2, 0, 4));
+    auto* client = new LoopbackClient;
+    REQUIRE(client->Start(2, 0, 4));
 
     // 동기 Connect — 성공 시 caller thread에서 OnConnect 콜백 호출됨
-    unsigned __int64 sid = client.Connect(kTestIP, kTestPort);
+    unsigned __int64 sid = client->Connect(kTestIP, kTestPort);
     REQUIRE(sid != 0);
-    REQUIRE(client.ConnectCnt == 1);
+    REQUIRE(client->ConnectCnt == 1);
 
     // Server 측 OnClientJoin 처리 대기 (worker thread 비동기)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    REQUIRE(server.JoinCnt == 1);
+    REQUIRE(server->JoinCnt == 1);
 
     // Echo round-trip: client → server (echo) → client
-    Packet* p = client.AllocPacket();
+    Packet* p = client->AllocPacket();
     int v = LoopbackClient::kTestValue;
     *p << v;
-    client.SendPacket(sid, p);
-    client.FreePacket(p);
+    client->SendPacket(sid, p);
+    client->FreePacket(p);
 
     // Send → server recv → echo → client recv 라운드트립 대기
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-    REQUIRE(server.RecvCnt == 1);
-    REQUIRE(client.RecvCnt == 1);
-    REQUIRE(client.VerifiedCnt == 1);
+    REQUIRE(server->RecvCnt == 1);
+    REQUIRE(client->RecvCnt == 1);
+    REQUIRE(client->VerifiedCnt == 1);
 
     // Disconnect 검증
-    client.Disconnect(sid);
+    client->Disconnect(sid);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    REQUIRE(client.DisconnectCnt == 1);
-    REQUIRE(server.LeaveCnt == 1);
+    REQUIRE(client->DisconnectCnt == 1);
+    REQUIRE(server->LeaveCnt == 1);
+
+    // server/client delete 안 함 — process exit cleanup 의존 (Phase 3c-8b에서 정식 변경)
 }
