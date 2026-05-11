@@ -20,6 +20,9 @@
     <ClInclude Include="include\NetServer.h">
       <Filter>Network</Filter>
     </ClInclude>
+    <ClInclude Include="include\NetClient.h">
+      <Filter>Network</Filter>
+    </ClInclude>
     <ClInclude Include="include\Packet.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -32,6 +35,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\NetServer.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NetClient.cpp">
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="src\Packet.cpp">
