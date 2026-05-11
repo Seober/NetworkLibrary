@@ -30,6 +30,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestServer", "Examples\Test
 		{8534C7AB-041E-424E-8410-67FD6C171987} = {8534C7AB-041E-424E-8410-67FD6C171987}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClient", "Examples\TestClient\TestClient.vcxproj", "{128B6CCF-F99D-432D-801C-26F500DAB06E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8534C7AB-041E-424E-8410-67FD6C171987} = {8534C7AB-041E-424E-8410-67FD6C171987}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -47,6 +52,8 @@ Global
 		{6CA342FD-6AB5-46BB-942E-3423A9E0B3A3}.Release|x64.Build.0 = Release|x64
 		{DDA4B029-5BF5-4E91-881E-EE988AF47B6F}.Release|x64.ActiveCfg = Release|x64
 		{DDA4B029-5BF5-4E91-881E-EE988AF47B6F}.Release|x64.Build.0 = Release|x64
+		{128B6CCF-F99D-432D-801C-26F500DAB06E}.Release|x64.ActiveCfg = Release|x64
+		{128B6CCF-F99D-432D-801C-26F500DAB06E}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
