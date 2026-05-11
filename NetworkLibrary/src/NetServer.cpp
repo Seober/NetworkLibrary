@@ -26,9 +26,11 @@ unsigned WINAPI NetServer::AcceptThread(LPVOID lpThreadParameter) {
     SOCKADDR_IN clientAddr;
     int addrSize = sizeof(clientAddr);
 
-    while (1) {
+    while (!server->Shutdown) {
         clientSocket = accept(server->ListenSocket, (SOCKADDR*)&clientAddr, &addrSize);
         if (clientSocket == INVALID_SOCKET) {
+            if (server->Shutdown)
+                break;
             int Err_Code = WSAGetLastError();
             switch (Err_Code) {
                 case 10004:
@@ -96,6 +98,8 @@ unsigned WINAPI NetServer::WorkerThread(LPVOID lpThreadParameter) {
                                   &tmpOverlapped, INFINITE);
 
         if (transferred == 0 && targetSession == NULL && tmpOverlapped == NULL) {
+            if (server->Shutdown)
+                break;
             pLogger->Log(L"Network", Logger::LogLevel::kSystem, L"# GQCS return NULL");
             pLogger->Crash();
             break;
@@ -195,6 +199,7 @@ NetServer::NetServer(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncoder(fa
 
     IOCP = NULL;
     ListenSocket = INVALID_SOCKET;
+    Shutdown = 0;
 
     SessionArr = NULL;
     TotalSessionCnt = 0;
@@ -217,23 +222,86 @@ NetServer::NetServer(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncoder(fa
 }
 
 NetServer::~NetServer() {
-    for (int i = 0; i < ThreadCnt; i++)
-        CloseHandle(WorkerThread_[i]);
-    delete[] WorkerThread_;
-    delete[] WorkerThreadID;
+    Stop();   // idempotent — 사용자가 명시적 Stop 안 했어도 안전
 
-    if (TotalSessionCnt)
+    // Stop이 thread 종료까지 보장. 여기서 handle/메모리 cleanup
+    if (WorkerThread_) {
+        for (int i = 0; i < ThreadCnt; i++)
+            if (WorkerThread_[i])
+                CloseHandle(WorkerThread_[i]);
+        delete[] WorkerThread_;
+        WorkerThread_ = NULL;
+    }
+    if (WorkerThreadID) {
+        delete[] WorkerThreadID;
+        WorkerThreadID = NULL;
+    }
+
+    if (TotalSessionCnt) {
         delete[] SessionArr;
+        SessionArr = NULL;
+        TotalSessionCnt = 0;
+    }
 
-    CloseHandle(AcceptThread_);
-
-    closesocket(ListenSocket);
+    if (AcceptThread_) {
+        CloseHandle(AcceptThread_);
+        AcceptThread_ = NULL;
+    }
 
     WSACleanup();
 
     if (OwnsEncoder) {
         delete Encoder;
         Encoder = nullptr;
+    }
+}
+
+void NetServer::Stop() {
+    if (InterlockedExchange(&Shutdown, 1) == 1)
+        return;   // idempotent
+
+    Logger* pLogger = Logger::GetInstance();
+
+    // 1. 모든 active session → KillSession (CancelIoEx 트리거)
+    //    Worker thread가 cancelled IO completion 받고 OnClientLeave 콜백 호출 + ReleaseSession
+    for (u_short i = 0; i < TotalSessionCnt; i++) {
+        Session* session = &SessionArr[i];
+        if (session->ReleaseArr[0] == FALSE) {
+            KillSession(session->SessionID);
+        }
+    }
+
+    // 2. Polling wait — 모든 session FreeSessionStack 환원 대기 (timeout 5s)
+    const DWORD timeoutMs = 5000;
+    DWORD startTick = GetTickCount();
+    while (GetConnectedSessionCnt() > 0) {
+        if (GetTickCount() - startTick > timeoutMs) {
+            pLogger->Log(L"NetServer", Logger::LogLevel::kError,
+                         L"Stop timeout — %d sessions remaining (OnClientLeave callback skipped)",
+                         GetConnectedSessionCnt());
+            break;
+        }
+        Sleep(10);
+    }
+
+    // 3. AcceptThread 종료 — ListenSocket close로 accept() 깨움
+    if (ListenSocket != INVALID_SOCKET) {
+        closesocket(ListenSocket);
+        ListenSocket = INVALID_SOCKET;
+    }
+    if (AcceptThread_)
+        WaitForSingleObject(AcceptThread_, INFINITE);
+
+    // 4. WorkerThread 종료 — PQCS × ThreadCnt로 GQCS 깨움
+    for (int i = 0; i < ThreadCnt; i++)
+        PostQueuedCompletionStatus(IOCP, 0, 0, NULL);
+    if (WorkerThread_ && ThreadCnt > 0)
+        WaitForMultipleObjects(ThreadCnt, WorkerThread_, TRUE, INFINITE);
+
+    // 5. IOCP close
+    if (IOCP) {
+        CloseHandle(IOCP);
+        IOCP = NULL;
     }
 }
 

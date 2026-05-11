@@ -50,6 +50,11 @@ public:
 
     bool Start(const WCHAR* serverIP, u_short serverPort, u_short workerThreadCnt_Total,
                u_short workerThreadCnt_Run, BOOL nagle, u_short connectSession_Max);
+
+    // 정상 종료 — 모든 active session에 OnDisconnect 콜백 보장 후 thread 종료.
+    // idempotent (다중 호출 안전), 동기 (return 시 모든 thread 종료 완료).
+    // 소멸자에서 자동 호출됨 — 사용자가 명시적 호출 안 해도 안전.
+    void Stop();
     /*void Stop();*/
     u_long GetConnectedSessionCnt() { return TotalSessionCnt - FreeSessionStack.GetUseSize(); }
     u_long GetDisconnectedSessionCnt() { return FreeSessionStack.GetUseSize(); }
@@ -113,6 +118,7 @@ private:
     HANDLE IOCP;
     SOCKET ListenSocket;
     unsigned __int64 SessionIDCnt;
+    volatile long Shutdown;   // Stop 트리거 플래그 (InterlockedExchange로 idempotent set)
 
     Session* SessionArr;
     u_short TotalSessionCnt;
