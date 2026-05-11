@@ -7,7 +7,7 @@
 constexpr int kMessageBufsize = 1000;
 WCHAR MessageBuf[kMessageBufsize];
 
-Chat_Server::Chat_Server(int maxUser, bool heartBeatFlag) {
+ChatServer::ChatServer(int maxUser, bool heartBeatFlag) {
     ContentThread = INVALID_HANDLE_VALUE;
     TimerThread5000 = INVALID_HANDLE_VALUE;
     JobEvent = CreateEvent(NULL, false, false, NULL);
@@ -30,35 +30,35 @@ Chat_Server::Chat_Server(int maxUser, bool heartBeatFlag) {
 }
 
 
-bool Chat_Server::OnConnectionRequest() {
+bool ChatServer::OnConnectionRequest() {
     if (GetCharacterSize() < (int)MaxUser)
         return true;
     else
         return false;
 }
 
-void Chat_Server::OnClientJoin(unsigned __int64 sessionID) {
-    stJob* job = AllocJob(JobType::kJoin, sessionID, NULL);
+void ChatServer::OnClientJoin(unsigned __int64 sessionID) {
+    Job* job = AllocJob(JobType::kJoin, sessionID, NULL);
     JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
-void Chat_Server::OnClientLeave(unsigned __int64 sessionID) {
-    stJob* job = AllocJob(JobType::kLeave, sessionID, NULL);
+void ChatServer::OnClientLeave(unsigned __int64 sessionID) {
+    Job* job = AllocJob(JobType::kLeave, sessionID, NULL);
     JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
 
 
-void Chat_Server::OnRecv(unsigned __int64 sessionID, Packet* packet) {
+void ChatServer::OnRecv(unsigned __int64 sessionID, Packet* packet) {
     packet->IncrementRef();
-    stJob* job = AllocJob(JobType::kMessage, sessionID, packet);
+    Job* job = AllocJob(JobType::kMessage, sessionID, packet);
     JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
 
-unsigned WINAPI Chat_Server::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
-    Chat_Server* server = (Chat_Server*)lpThreadParameter;
-    stJob* job;
+unsigned WINAPI ChatServer::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
+    ChatServer* server = (ChatServer*)lpThreadParameter;
+    Job* job;
 
     while (1) {
         job = server->AllocJob(JobType::kHeartbeat, NULL, NULL);
@@ -72,9 +72,9 @@ unsigned WINAPI Chat_Server::TimerThread_Chat_5000(LPVOID lpThreadParameter) {
 }
 
 
-unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) {
-    Chat_Server* server = (Chat_Server*)lpThreadParameter;
-    stJob* job;
+unsigned WINAPI ChatServer::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) {
+    ChatServer* server = (ChatServer*)lpThreadParameter;
+    Job* job;
 
     while (1) {
         if (server->JobQueue.Dequeue(job)) {
@@ -118,9 +118,9 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
 }
 
 
-void Chat_Server::MessageControl(unsigned __int64 sessionID, Packet* messagePacket) {
+void ChatServer::MessageControl(unsigned __int64 sessionID, Packet* messagePacket) {
     WORD messageType;
-    stCharacter* character;
+    Character* character;
 
     character = FindCharacter(sessionID);
     if (character == NULL) {
@@ -188,7 +188,7 @@ void Chat_Server::MessageControl(unsigned __int64 sessionID, Packet* messagePack
                 if (character->SectorX !=
                     -1)  // 기존에 섹터에 들어가있는경우 <> 로그인만 진행한 경우 -1로 초기화
                 {
-                    std::list<stCharacter*>::iterator iter_SectorList;
+                    std::list<Character*>::iterator iter_SectorList;
                     for (iter_SectorList =
                              SectorList[character->SectorY][character->SectorX].begin();
                          iter_SectorList !=
@@ -268,11 +268,11 @@ void Chat_Server::MessageControl(unsigned __int64 sessionID, Packet* messagePack
     FreePacket(messagePacket);
 }
 
-Chat_Server::stCharacter* Chat_Server::CreateCharacter(unsigned __int64 sessionID) {
+ChatServer::Character* ChatServer::CreateCharacter(unsigned __int64 sessionID) {
     if (CharacterMap.find(sessionID) != CharacterMap.end())
         return NULL;
 
-    stCharacter* character = CharacterPool.Alloc();
+    Character* character = CharacterPool.Alloc();
     character->SessionID = sessionID;
     character->AccountNo = 0;
     character->SectorX = -1;
@@ -282,20 +282,20 @@ Chat_Server::stCharacter* Chat_Server::CreateCharacter(unsigned __int64 sessionI
 }
 
 
-Chat_Server::stCharacter* Chat_Server::FindCharacter(unsigned __int64 sessionID) {
-    std::map<unsigned __int64, stCharacter*>::iterator iter_Find = CharacterMap.find(sessionID);
+ChatServer::Character* ChatServer::FindCharacter(unsigned __int64 sessionID) {
+    std::map<unsigned __int64, Character*>::iterator iter_Find = CharacterMap.find(sessionID);
     if (iter_Find == CharacterMap.end())
         return NULL;
     return iter_Find->second;
 }
 
 
-void Chat_Server::CheckHeartBeat(void) {
+void ChatServer::CheckHeartBeat(void) {
     DWORD curTime = timeGetTime();
-    std::map<unsigned __int64, stCharacter*>::iterator iter_CharacterMap;
+    std::map<unsigned __int64, Character*>::iterator iter_CharacterMap;
     for (iter_CharacterMap = CharacterMap.begin(); iter_CharacterMap != CharacterMap.end();
          ++iter_CharacterMap) {
-        stCharacter* character = iter_CharacterMap->second;
+        Character* character = iter_CharacterMap->second;
 
         if (curTime - character->LastRecvTime > 40000) {
             pLogger->Log(L"Content", Logger::LogLevel::kSystem,
@@ -306,13 +306,13 @@ void Chat_Server::CheckHeartBeat(void) {
     }
 }
 
-void Chat_Server::LeaveCharacter(unsigned __int64 sessionID) {
-    stCharacter* character = FindCharacter(sessionID);
+void ChatServer::LeaveCharacter(unsigned __int64 sessionID) {
+    Character* character = FindCharacter(sessionID);
     if (character != NULL) {
         CharacterMap.erase(sessionID);
 
         if (character->SectorX >= 0 && character->SectorY >= 0) {
-            std::list<stCharacter*>::iterator iter_List;
+            std::list<Character*>::iterator iter_List;
             for (iter_List = SectorList[character->SectorY][character->SectorX].begin();
                  iter_List != SectorList[character->SectorY][character->SectorX].end();
                  ++iter_List) {
@@ -331,7 +331,7 @@ void Chat_Server::LeaveCharacter(unsigned __int64 sessionID) {
     }
 }
 
-void Chat_Server::SendPacketAround(int sectorX, int sectorY, Packet* packet) {
+void ChatServer::SendPacketAround(int sectorX, int sectorY, Packet* packet) {
     int cntX, cntY;
     int targetCnt = 0;
 
@@ -346,7 +346,7 @@ void Chat_Server::SendPacketAround(int sectorX, int sectorY, Packet* packet) {
             if (sectorX + cntX < 0 || sectorX + cntX >= kSectorXMax)
                 continue;
 
-            std::list<stCharacter*>::iterator iter_Sector;
+            std::list<Character*>::iterator iter_Sector;
             for (iter_Sector = SectorList[sectorY + cntY][sectorX + cntX].begin();
                  iter_Sector != SectorList[sectorY + cntY][sectorX + cntX].end();
                  ++iter_Sector) {
@@ -358,15 +358,15 @@ void Chat_Server::SendPacketAround(int sectorX, int sectorY, Packet* packet) {
 
 
 
-Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 sessionID,
+ChatServer::Job* ChatServer::AllocJob(JobType type, unsigned __int64 sessionID,
                                           Packet* packet) {
-    TLSNodeMemoryPool<stJob>* jobPool = (TLSNodeMemoryPool<stJob>*)TlsGetValue(
-        TLSChunkMemoryPool<stJob>::GetInstance()->GetTLSIndex());
+    TLSNodeMemoryPool<Job>* jobPool = (TLSNodeMemoryPool<Job>*)TlsGetValue(
+        TLSChunkMemoryPool<Job>::GetInstance()->GetTLSIndex());
     if (jobPool == NULL) {
-        jobPool = new TLSNodeMemoryPool<stJob>;
+        jobPool = new TLSNodeMemoryPool<Job>;
         jobPool->SetTLS();
     }
-    stJob* job = jobPool->Alloc();
+    Job* job = jobPool->Alloc();
     job->type = type;
     job->SessionID = sessionID;
     job->packet = packet;
@@ -375,11 +375,11 @@ Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 session
 }
 
 
-void Chat_Server::FreeJob(stJob* job) {
-    TLSNodeMemoryPool<stJob>* jobPool = (TLSNodeMemoryPool<stJob>*)TlsGetValue(
-        TLSChunkMemoryPool<stJob>::GetInstance()->GetTLSIndex());
+void ChatServer::FreeJob(Job* job) {
+    TLSNodeMemoryPool<Job>* jobPool = (TLSNodeMemoryPool<Job>*)TlsGetValue(
+        TLSChunkMemoryPool<Job>::GetInstance()->GetTLSIndex());
     if (jobPool == NULL) {
-        jobPool = new TLSNodeMemoryPool<stJob>;
+        jobPool = new TLSNodeMemoryPool<Job>;
         jobPool->SetTLS();
     }
     jobPool->Free(job);

@@ -5,7 +5,7 @@
 #include <list>
 #include <map>
 
-class Chat_Server : public NetServer {
+class ChatServer : public NetServer {
 public:
     static constexpr int kSectorXMax = 50;
     static constexpr int kSectorYMax = 50;
@@ -17,13 +17,13 @@ public:
         kHeartbeat,
     };
 
-    struct stJob {
+    struct Job {
         JobType type;
         unsigned __int64 SessionID;
         Packet* packet;
     };
 
-    struct stCharacter {
+    struct Character {
         unsigned __int64 SessionID;
         INT64 AccountNo;
         short SectorX;
@@ -35,8 +35,8 @@ public:
     };
 
 public:
-    Chat_Server(int maxUser = 5000, bool heartBeatFlag = false);
-    ~Chat_Server() {}
+    ChatServer(int maxUser = 5000, bool heartBeatFlag = false);
+    ~ChatServer() {}
 
 
     bool OnConnectionRequest();
@@ -46,8 +46,8 @@ public:
 
 
     void MessageControl(unsigned __int64 sessionID, Packet* messagePacket);
-    stCharacter* FindCharacter(unsigned __int64 sessionID);
-    stCharacter* CreateCharacter(unsigned __int64 sessionID);
+    Character* FindCharacter(unsigned __int64 sessionID);
+    Character* CreateCharacter(unsigned __int64 sessionID);
     void LeaveCharacter(unsigned __int64 sessionID);  // 캐릭터에 대한 형태로 이름 바꾸기
     void SendPacketAround(int sectorX, int sectorY, Packet* packet);
     void CheckHeartBeat(void);
@@ -69,21 +69,21 @@ public:
     int Log_GetCharacterPool_Free(void) { return CharacterPool.GetFreeMemCnt(); }
 
     int Log_GetJobPoolTotal(void) {
-        return TLSChunkMemoryPool<stJob>::GetInstance()->GetTotalMemCnt();
+        return TLSChunkMemoryPool<Job>::GetInstance()->GetTotalMemCnt();
     }
     int Log_GetJobPoolUse(void) {
-        return TLSChunkMemoryPool<stJob>::GetInstance()->GetUseMemCnt();
+        return TLSChunkMemoryPool<Job>::GetInstance()->GetUseMemCnt();
     }
     int Log_GetJobPoolFree(void) {
-        return TLSChunkMemoryPool<stJob>::GetInstance()->GetFreeMemCnt();
+        return TLSChunkMemoryPool<Job>::GetInstance()->GetFreeMemCnt();
     }
 
 private:
     static unsigned WINAPI UpdateThread_Chat_Field1(LPVOID lpThreadParameter);
     static unsigned WINAPI TimerThread_Chat_5000(LPVOID lpThreadParameter);
 
-    inline stJob* AllocJob(JobType type, unsigned __int64 sessionID, Packet* packet);
-    inline void FreeJob(stJob* job);
+    inline Job* AllocJob(JobType type, unsigned __int64 sessionID, Packet* packet);
+    inline void FreeJob(Job* job);
 
 private:
     HANDLE ContentThread;
@@ -93,11 +93,11 @@ private:
     unsigned int MaxUser;
     DWORD Running_CurTime;
 
-    LockFreeQueue<stJob*> JobQueue;
+    LockFreeQueue<Job*> JobQueue;
 
-    LockFreeMemoryPool<stCharacter> CharacterPool;
-    std::map<unsigned __int64, stCharacter*> CharacterMap;
-    std::list<stCharacter*> SectorList[kSectorYMax][kSectorXMax];
+    LockFreeMemoryPool<Character> CharacterPool;
+    std::map<unsigned __int64, Character*> CharacterMap;
+    std::list<Character*> SectorList[kSectorYMax][kSectorXMax];
 
     Logger* pLogger;
 

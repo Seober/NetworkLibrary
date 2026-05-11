@@ -5,7 +5,7 @@
 #include "Content.h"
 
 #include "Logger.h"
-#include "Monitoring_Tool.h"
+#include "MonitoringTool.h"
 
 
 #define SERVER_IP NULL
@@ -31,7 +31,7 @@ int main(void) {
     else
         nagleFlag = TRUE;
 
-    Chat_Server server(MAX_USER);
+    ChatServer server(MAX_USER);
     /*server.CreateContentThread(true);*/
     if (!server.Start(SERVER_IP, SERVER_PORT, processorCnt, 0, nagleFlag, MAX_USER * 2))
         return 0;
@@ -41,7 +41,7 @@ int main(void) {
 
 
     u_int64 loopCnt = 0;
-    Monitoring_Tool monitor;
+    MonitoringTool monitor;
 
     DWORD transmitBuffer[4] = {
         0,

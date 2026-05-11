@@ -1,9 +1,9 @@
 ﻿#include <windows.h>
 #include <strsafe.h>
 
-#include "Monitoring_Tool.h"
+#include "MonitoringTool.h"
 
-Monitoring_Tool::Monitoring_Tool(HANDLE process) {
+MonitoringTool::MonitoringTool(HANDLE process) {
     if (process == INVALID_HANDLE_VALUE)
         Process = GetCurrentProcess();
     WCHAR processNameBuf[1024];
@@ -120,7 +120,7 @@ Monitoring_Tool::Monitoring_Tool(HANDLE process) {
 }
 
 //CPU 사용률 갱신, 500ms ~ 1s 단위 호출이 적절
-void Monitoring_Tool::UpdateCPUTime() {
+void MonitoringTool::UpdateCPUTime() {
     //포로세서 사용률 갱신
     //본래 사용 구조체 : FILETIME >> 100 ns 단위의 시간단위를 표현하는 구조체
     //	ㄴ ULARGE_INTEGER와 구조가 같으므로 이를 사용
@@ -197,7 +197,7 @@ void Monitoring_Tool::UpdateCPUTime() {
 }
 
 
-void Monitoring_Tool::UpdateQuery() {
+void MonitoringTool::UpdateQuery() {
     PdhCollectQueryData(Query_PDH);
 
     PDH_FMT_COUNTERVALUE counterVal;

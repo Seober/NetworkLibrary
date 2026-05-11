@@ -2,11 +2,11 @@
 #pragma comment(lib, "Pdh.lib")
 #include <Pdh.h>
 
-class Monitoring_Tool {
+class MonitoringTool {
 public:
     static constexpr int kPdhEthernetMax = 8;
 
-    struct st_ETHERNET {
+    struct Ethernet {
         bool Use;
         WCHAR Name[128];
 
@@ -14,7 +14,7 @@ public:
         PDH_HCOUNTER pdh_Counter_Network_SendBytes;
     };
     //생성자, 확인대상 프로세스 핸들, 미입력 시 자기자신
-    Monitoring_Tool(HANDLE process = INVALID_HANDLE_VALUE);
+    MonitoringTool(HANDLE process = INVALID_HANDLE_VALUE);
 
     void UpdateCPUTime(void);
     void UpdateQuery(void);
@@ -89,7 +89,7 @@ private:
     long NonPagedMemory_;
 
 
-    st_ETHERNET EthernetStruct[kPdhEthernetMax];
+    Ethernet EthernetStruct[kPdhEthernetMax];
     double pdh_value_Network_RecvBytes;
     double pdh_value_Network_SendBytes;
 };

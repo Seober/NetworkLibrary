@@ -56,12 +56,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Content.h" />
-    <ClInclude Include="Monitoring_Tool.h" />
+    <ClInclude Include="MonitoringTool.h" />
     <ClInclude Include="ChatProtocol.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Content.cpp" />
-    <ClCompile Include="Monitoring_Tool.cpp" />
+    <ClCompile Include="MonitoringTool.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
