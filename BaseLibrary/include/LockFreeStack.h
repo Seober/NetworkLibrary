@@ -49,10 +49,6 @@ public:
 
     inline unsigned int GetUseSize(void) { return Size; }
 
-    inline int GetTotalPool(void) { return NodePool.GetTotalMemCnt(); }
-    inline int GetUsePool(void) { return NodePool.GetUseMemCnt(); }
-    inline int GetFreePool(void) { return NodePool.GetFreeMemCnt(); }
-
 
 private:
     inline short GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }

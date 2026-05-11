@@ -62,20 +62,6 @@ public:
         return FreeSize;
     }
 
-
-    int GetStackSize(void) {
-        return ChunckStack.GetUseSize();
-    }
-    int GetTotalPoolCnt(void) {
-        return ChunckStack.GetTotalPool();
-    }
-    int GetUsePoolCnt(void) {
-        return ChunckStack.GetUsePool();
-    }
-    int GetFreePoolCnt(void) {
-        return ChunckStack.GetFreePool();
-    }
-
 private:
     TLSChunkMemoryPool() {
         TLSIdx = TlsAlloc();

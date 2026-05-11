@@ -64,24 +64,6 @@ public:
 
     int GetUseSize(void) { return Size; }
 
-    ////////////////////////////////////////////
-    static int Log_GetTotalMemCnt(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->Log_GetTotalMemCnt();
-    }
-
-    static int GetStackSize(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->GetStackSize();
-    }
-    static int GetPool_TotalSize(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->GetTotalPoolCnt();
-    }
-    static int GetPool_UseSize(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->GetUsePoolCnt();
-    }
-    static int GetPool_FreeSize(void) {
-        return TLSChunkMemoryPool<stNode>::GetInstance()->GetFreePoolCnt();
-    }
-
 
 private:
     inline WORD GetTagCnt(void) { return InterlockedIncrement16(&TagCnt); }

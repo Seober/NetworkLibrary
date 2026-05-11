@@ -86,11 +86,6 @@ public:
     int LogGetPacketPoolUse(void) { return PacketPool->GetUseMemCnt(); }
     int LogGetPacketPoolFree(void) { return PacketPool->GetFreeMemCnt(); }
 
-    int GetStackSize(void) { return PacketPool->GetStackSize(); }
-    int GetTotalPoolCnt(void) { return PacketPool->GetTotalPoolCnt(); }
-    int GetUsePoolCnt(void) { return PacketPool->GetUsePoolCnt(); }
-    int GetFreePoolCnt(void) { return PacketPool->GetFreePoolCnt(); }
-
     void AddRecvBytes(DWORD recvBytes);
     void AddRecvPacket(void);
     void AddSend(DWORD sendPacketCnt, DWORD sendBytes);
