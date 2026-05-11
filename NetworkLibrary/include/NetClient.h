@@ -48,6 +48,11 @@ public:
 
     bool Start(u_short workerThreadCntTotal, u_short workerThreadCntRun, u_short maxSessionCnt);
 
+    // 정상 종료 — 모든 active session에 OnDisconnect 콜백 보장 후 thread 종료.
+    // idempotent (다중 호출 안전), 동기 (return 시 모든 thread 종료 완료).
+    // 소멸자에서 자동 호출됨 — 사용자가 명시적 호출 안 해도 안전.
+    void Stop();
+
     // 동기 Connect — 성공 시 sessionID 반환, 실패 시 0
     // OnConnect 콜백은 caller thread에서 호출됨 (caller thread block 회피 위해 가벼운 작업만 권장)
     unsigned __int64 Connect(const WCHAR* serverIP, u_short serverPort);
@@ -103,6 +108,7 @@ private:
 private:
     HANDLE IOCP;
     unsigned __int64 SessionIDCnt;
+    volatile long Shutdown;   // Stop 트리거 플래그 (InterlockedExchange로 idempotent set)
 
     Session* SessionArr;
     u_short TotalSessionCnt;
