@@ -21,14 +21,14 @@ public:
     char* GetWriteBufferPtr(void) { return &Buffer[Rear]; }
 
     char* GetFrontPtr(void) { return Buffer; }
-    void Front_MoveTo(int idx) { Front = idx; }
-    void Rear_MoveTo(int idx) { Rear = idx; }
+    void MoveFrontTo(int idx) { Front = idx; }
+    void MoveRearTo(int idx) { Rear = idx; }
 
-    bool CheckFlag_Encode(void) { return EncodeFlag; }
-    void LockPacket(void) { AcquireSRWLockExclusive(&srw_Encode); }
+    bool IsEncoded(void) { return EncodeFlag; }
+    void LockPacket(void) { AcquireSRWLockExclusive(&SRWEncode); }
     void UnlockPacket(void) {
         EncodeFlag = true;
-        ReleaseSRWLockExclusive(&srw_Encode);
+        ReleaseSRWLockExclusive(&SRWEncode);
     }
 
 
@@ -103,7 +103,7 @@ private:
     char* Buffer;
 
 private:
-    SRWLOCK srw_Encode;
+    SRWLOCK SRWEncode;
     bool EncodeFlag;
 };
 

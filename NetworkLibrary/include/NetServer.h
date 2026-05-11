@@ -51,9 +51,9 @@ public:
     bool Start(const WCHAR* serverIP, u_short serverPort, u_short workerThreadCnt_Total,
                u_short workerThreadCnt_Run, BOOL nagle, u_short connectSession_Max);
     /*void Stop();*/
-    u_long GetSessionCnt_Connected() { return SessionCnt_Total - FreeSessionStack.GetUseSize(); }
-    u_long GetSessionCnt_Disconnected() { return FreeSessionStack.GetUseSize(); }
-    u_long GetSessionCnt_Total() { return SessionCnt_Total; }
+    u_long GetConnectedSessionCnt() { return TotalSessionCnt - FreeSessionStack.GetUseSize(); }
+    u_long GetDisconnectedSessionCnt() { return FreeSessionStack.GetUseSize(); }
+    u_long GetTotalSessionCnt() { return TotalSessionCnt; }
 
     Session* FindSession(unsigned __int64 sessionID) { return &SessionArr[sessionID >> 48]; }
     Session* GetFreeSession(void);
@@ -69,7 +69,7 @@ public:
     virtual void OnRecv(unsigned __int64 sessionID, Packet* packet) = 0;
 
     /*SOCKET GetListenSocket() { return ListenSocket; }*/
-    unsigned __int64 GetSessionID_New() { return ++SessionID_Cnt; }
+    unsigned __int64 GenerateSessionID() { return ++SessionIDCnt; }
     /*HANDLE GetIOCPHandle() { return IOCP; }*/
 
     bool SendPost(Session* session, DWORD flag = 0);
@@ -82,9 +82,9 @@ public:
     bool GetPacketMessage(Packet* packet, Packet* recvQ);
 
     ////////////////////////////////////////////////////////////////////////////////
-    int Log_GetPacketPoolTotal(void) { return PacketPool->GetTotalMemCnt(); }
-    int Log_GetPacketPoolUse(void) { return PacketPool->GetUseMemCnt(); }
-    int Log_GetPacketPoolFree(void) { return PacketPool->GetFreeMemCnt(); }
+    int LogGetPacketPoolTotal(void) { return PacketPool->GetTotalMemCnt(); }
+    int LogGetPacketPoolUse(void) { return PacketPool->GetUseMemCnt(); }
+    int LogGetPacketPoolFree(void) { return PacketPool->GetFreeMemCnt(); }
 
     int GetStackSize(void) { return PacketPool->GetStackSize(); }
     int GetTotalPoolCnt(void) { return PacketPool->GetTotalPoolCnt(); }
@@ -107,7 +107,7 @@ public:
 
 private:
     void ReleaseSession(Session* session);
-    void initSession(Session* session);
+    void InitSession(Session* session);
 
     // thread_local 캐시로 LogTransmit_Map 접근 — find/insert race 회피
     // 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
@@ -117,10 +117,10 @@ private:
 private:
     HANDLE IOCP;
     SOCKET ListenSocket;
-    unsigned __int64 SessionID_Cnt;
+    unsigned __int64 SessionIDCnt;
 
     Session* SessionArr;
-    u_short SessionCnt_Total;
+    u_short TotalSessionCnt;
 
 
     DWORD AcceptThreadID;

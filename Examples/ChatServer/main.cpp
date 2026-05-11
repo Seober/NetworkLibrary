@@ -76,10 +76,10 @@ int main(void) {
         processUseCPUTotal = (int)monitor.ProcessTotal();
         processUseMemory = monitor.ProcessUserAllocMemory() / 1000000;
 
-        sessionCnt = server.GetSessionCnt_Connected();
+        sessionCnt = server.GetConnectedSessionCnt();
         userCnt = server.GetCharacterSize();
         jobTPS = server.GetJobTPS();
-        usePacketPool = server.Log_GetPacketPoolUse();
+        usePacketPool = server.LogGetPacketPoolUse();
         useJobPool = server.Log_GetJobPoolUse();
 
         processorUseCPUTotal = (int)monitor.ProcessorTotal();
@@ -102,8 +102,8 @@ int main(void) {
         wprintf(L"[Network_Logic]\t> AcceptTotal:%I64u\t\tAcceptTPS:%d\n\n",
                 server.GetAcceptTotal(), server.GetAcceptTPS());
         wprintf(L"[ChunckPool_Packet]\t> Total:%d\tUse:%d\t\tFree:%d\n",
-                server.Log_GetPacketPoolTotal(), server.Log_GetPacketPoolUse(),
-                server.Log_GetPacketPoolFree());
+                server.LogGetPacketPoolTotal(), server.LogGetPacketPoolUse(),
+                server.LogGetPacketPoolFree());
         wprintf(L"[ChunckPool_Job]\t> Total:%d\tUse:%d\t\tFree:%d\n\n",
                 server.Log_GetJobPoolTotal(), server.Log_GetJobPoolUse(),
                 server.Log_GetJobPoolFree());
@@ -135,11 +135,11 @@ int main(void) {
         //server.GetTransmit(transmitBuffer);
 
         //wprintf(L"\n====================================[loopCnt:%I64u]=====================================\n", loopCnt++);
-        //wprintf(L"sessionCnt:%d, CharacterCnt:%d\n\n", server.GetSessionCnt_Connected(), server.GetCharacterSize());
+        //wprintf(L"sessionCnt:%d, CharacterCnt:%d\n\n", server.GetConnectedSessionCnt(), server.GetCharacterSize());
         //wprintf(L"[Network_Logic]\t> RecvTPS:%d, RecvBytes:%d B\n", transmitBuffer[0], transmitBuffer[1]);
         //wprintf(L"[Network_Logic]\t> SendTPS:%d, SendBytes:%d B\n", transmitBuffer[2], transmitBuffer[3]);
         //wprintf(L"[Network_Logic]\t> AcceptTotal:%I64u\t\tAcceptTPS:%d\n\n", server.GetAcceptTotal(), server.GetAcceptTPS());
-        //wprintf(L"[ChunckPool_Packet]\t> Total:%d\tUse:%d\tFree:%d\n", server.Log_GetPacketPoolTotal(), server.Log_GetPacketPoolUse(), server.Log_GetPacketPoolFree());
+        //wprintf(L"[ChunckPool_Packet]\t> Total:%d\tUse:%d\tFree:%d\n", server.LogGetPacketPoolTotal(), server.LogGetPacketPoolUse(), server.LogGetPacketPoolFree());
         //wprintf(L"[ChunckPool_Job]\t> Total:%d\tUse:%d\tFree:%d\n", server.Log_GetJobPoolTotal(), server.Log_GetJobPoolUse(), server.Log_GetJobPoolFree());
         ///*wprintf(L"[ChunckPool_Packet]\t> FreePacketChunck:%d\tPoolTotal:%d\n", server.GetStackSize(), server.GetTotalPoolCnt());
         //wprintf(L"[ChunckPool_SendQ]\t> FreeLFQChunck:%d\tPoolTotal:%d\n", LockFreeQueue<Packet*>::GetStackSize(), LockFreeQueue<Packet*>::GetPool_TotalSize());

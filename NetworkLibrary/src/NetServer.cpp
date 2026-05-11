@@ -47,7 +47,7 @@ unsigned WINAPI NetServer::AcceptThread(LPVOID lpThreadParameter) {
             closesocket(clientSocket);
             pLogger->Log(L"Accept", Logger::LogLevel::kDebug,
                          L"Max User Connected, ConnectedSession:%d\n",
-                         server->GetSessionCnt_Connected());
+                         server->GetConnectedSessionCnt());
             continue;
         }
 
@@ -56,7 +56,7 @@ unsigned WINAPI NetServer::AcceptThread(LPVOID lpThreadParameter) {
             closesocket(clientSocket);
             pLogger->Log(L"Accept", Logger::LogLevel::kDebug,
                          L"Not Enough FreeSession, ConnectedSession:%d\n",
-                         server->GetSessionCnt_Connected());
+                         server->GetConnectedSessionCnt());
             continue;
         }
 
@@ -197,9 +197,9 @@ NetServer::NetServer(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncoder(fa
     ListenSocket = INVALID_SOCKET;
 
     SessionArr = NULL;
-    SessionCnt_Total = 0;
+    TotalSessionCnt = 0;
 
-    SessionID_Cnt = 0;
+    SessionIDCnt = 0;
 
     AcceptThreadID = 0;
     AcceptThread_ = NULL;
@@ -222,7 +222,7 @@ NetServer::~NetServer() {
     delete[] WorkerThread_;
     delete[] WorkerThreadID;
 
-    if (SessionCnt_Total)
+    if (TotalSessionCnt)
         delete[] SessionArr;
 
     CloseHandle(AcceptThread_);
@@ -291,9 +291,9 @@ bool NetServer::Start(const WCHAR* serverIP, u_short serverPort, u_short workerT
 
     //////////////////////////////////////////
 
-    SessionCnt_Total = connectSession_Max;
-    SessionArr = new Session[SessionCnt_Total];
-    for (u_short init_SessionArr = 0; init_SessionArr < SessionCnt_Total; init_SessionArr++) {
+    TotalSessionCnt = connectSession_Max;
+    SessionArr = new Session[TotalSessionCnt];
+    for (u_short init_SessionArr = 0; init_SessionArr < TotalSessionCnt; init_SessionArr++) {
         SessionArr[init_SessionArr].ReleaseArr[0] = TRUE;
         SessionArr[init_SessionArr].ReleaseArr[1] = 0;
         SessionArr[init_SessionArr].SessionID = (unsigned __int64)init_SessionArr << 48;
@@ -458,7 +458,7 @@ NetServer::Session* NetServer::GetFreeSession() {
     if (session == NULL)
         return NULL;
 
-    initSession(session);
+    InitSession(session);
 
     return session;
 }
@@ -481,9 +481,9 @@ void NetServer::ReleaseSession(Session* session) {
     FreeSessionStack.Push(session);
 }
 
-void NetServer::initSession(Session* session) {
+void NetServer::InitSession(Session* session) {
     session->SessionUseFlag = true;
-    session->SessionID |= GetSessionID_New();
+    session->SessionID |= GenerateSessionID();
 
     session->LastAction = NULL;
 

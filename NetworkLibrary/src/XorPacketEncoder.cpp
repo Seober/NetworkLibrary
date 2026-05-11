@@ -6,11 +6,11 @@ XorPacketEncoder::XorPacketEncoder(BYTE headerCode, BYTE encryptKey, WORD maxPay
 
 void XorPacketEncoder::Encode(Packet& packet) {
     // idempotency: 이미 Encode된 packet은 다시 처리 안 함 (재전송 시나리오 보호)
-    if (packet.CheckFlag_Encode())
+    if (packet.IsEncoded())
         return;
 
     packet.LockPacket();
-    if (packet.CheckFlag_Encode() == false) {
+    if (packet.IsEncoded() == false) {
         // 헤더 작성 — 페이로드 위치 미리 잡고, Front를 헤더 공간으로 후진
         char* payload = packet.GetReadBufferPtr();
         WORD payloadSize = (WORD)packet.GetDataSize();
