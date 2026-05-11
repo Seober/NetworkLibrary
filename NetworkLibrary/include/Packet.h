@@ -20,10 +20,6 @@ public:
     char* GetReadBufferPtr(void) { return &Buffer[Front]; }
     char* GetWriteBufferPtr(void) { return &Buffer[Rear]; }
 
-    char* GetFrontPtr(void) { return Buffer; }
-    void MoveFrontTo(int idx) { Front = idx; }
-    void MoveRearTo(int idx) { Rear = idx; }
-
     bool IsEncoded(void) { return EncodeFlag; }
     void LockPacket(void) { AcquireSRWLockExclusive(&SRWEncode); }
     void UnlockPacket(void) {
@@ -85,8 +81,6 @@ public:
 
     inline int IncrementRef(void) { return InterlockedIncrement(&RefCnt); }
     inline int DecrementRef(void) { return InterlockedDecrement(&RefCnt); }
-
-    inline int GetRef(void) { return InterlockedExchange(&RefCnt, RefCnt); }
 
 
 private:
