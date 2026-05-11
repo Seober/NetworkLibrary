@@ -10,7 +10,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{7A9B3D5C-2F8E-4A1B-9C6D-5E8F2A4B7C9D}</ProjectGuid>
-    <RootNamespace>DummyClient</RootNamespace>
+    <RootNamespace>ChatDummyClient</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

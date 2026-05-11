@@ -15,7 +15,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ChatServer", "Examples\Chat
 		{8534C7AB-041E-424E-8410-67FD6C171987} = {8534C7AB-041E-424E-8410-67FD6C171987}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyClient", "Examples\DummyClient\DummyClient.vcxproj", "{7A9B3D5C-2F8E-4A1B-9C6D-5E8F2A4B7C9D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ChatDummyClient", "Examples\ChatDummyClient\ChatDummyClient.vcxproj", "{7A9B3D5C-2F8E-4A1B-9C6D-5E8F2A4B7C9D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8534C7AB-041E-424E-8410-67FD6C171987} = {8534C7AB-041E-424E-8410-67FD6C171987}
 	EndProjectSection
