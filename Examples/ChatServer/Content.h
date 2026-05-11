@@ -1,11 +1,11 @@
 ﻿#pragma once
-#include "CNet_Server.h"
+#include "NetServer.h"
 #include "Logger.h"
 
 #include <list>
 #include <map>
 
-class Chat_Server : public CNet_Server {
+class Chat_Server : public NetServer {
 public:
     static constexpr int kSectorXMax = 50;
     static constexpr int kSectorYMax = 50;
@@ -20,7 +20,7 @@ public:
     struct stJob {
         JobType type;
         unsigned __int64 SessionID;
-        CPacket* Packet;
+        Packet* packet;
     };
 
     struct stCharacter {
@@ -42,14 +42,14 @@ public:
     bool OnConnectionRequest();
     void OnClientJoin(unsigned __int64 sessionID);
     void OnClientLeave(unsigned __int64 sessionID);
-    void OnRecv(unsigned __int64 sessionID, CPacket* packet);
+    void OnRecv(unsigned __int64 sessionID, Packet* packet);
 
 
-    void MessageControl(unsigned __int64 sessionID, CPacket* messagePacket);
+    void MessageControl(unsigned __int64 sessionID, Packet* messagePacket);
     stCharacter* FindCharacter(unsigned __int64 sessionID);
     stCharacter* CreateCharacter(unsigned __int64 sessionID);
     void LeaveCharacter(unsigned __int64 sessionID);  // 캐릭터에 대한 형태로 이름 바꾸기
-    void SendPacketAround(int sectorX, int sectorY, CPacket* packet);
+    void SendPacketAround(int sectorX, int sectorY, Packet* packet);
     void CheckHeartBeat(void);
 
 
@@ -82,7 +82,7 @@ private:
     static unsigned WINAPI UpdateThread_Chat_Field1(LPVOID lpThreadParameter);
     static unsigned WINAPI TimerThread_Chat_5000(LPVOID lpThreadParameter);
 
-    inline stJob* AllocJob(JobType type, unsigned __int64 sessionID, CPacket* packet);
+    inline stJob* AllocJob(JobType type, unsigned __int64 sessionID, Packet* packet);
     inline void FreeJob(stJob* job);
 
 private:

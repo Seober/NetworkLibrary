@@ -4,7 +4,7 @@
 
 #include "WorkerThread.h"
 #include "../ChatServer/ChatProtocol.h"
-#include "CPacket.h"
+#include "Packet.h"
 
 #include <process.h>
 #include <stdio.h>
@@ -108,7 +108,7 @@ static void HandleConnectComplete(ClientSession& s, WorkerContext* ctx, bool wri
 }
 
 static void SendLoginPacket(ClientSession& s, WorkerContext* ctx, int globalIdx) {
-    CPacket packet;
+    Packet packet;
     packet.Clear();
 
     WORD type = kCsChatReqLogin;
@@ -142,7 +142,7 @@ static void SendLoginPacket(ClientSession& s, WorkerContext* ctx, int globalIdx)
 }
 
 static void SendSectorMovePacket(ClientSession& s, WorkerContext* ctx) {
-    CPacket packet;
+    Packet packet;
     packet.Clear();
 
     WORD type = kCsChatReqSectorMove;
@@ -168,7 +168,7 @@ static void SendSectorMovePacket(ClientSession& s, WorkerContext* ctx) {
 }
 
 static void SendChatPacket(ClientSession& s, WorkerContext* ctx) {
-    CPacket packet;
+    Packet packet;
     packet.Clear();
 
     WORD type = kCsChatReqMessage;
@@ -194,7 +194,7 @@ static void SendChatPacket(ClientSession& s, WorkerContext* ctx) {
 }
 
 static void SendHeartbeatPacket(ClientSession& s, WorkerContext* ctx) {
-    CPacket packet;
+    Packet packet;
     packet.Clear();
 
     WORD type = kCsChatReqHeartbeat;
@@ -240,8 +240,8 @@ static int ProcessRecvBuffer(ClientSession& s, WorkerContext* ctx) {
         if (s.recvBytes - processed < packetSize)
             break;  // 페이로드 부족
 
-        // 임시 CPacket으로 복호화
-        CPacket tmpPacket;
+        // 임시 Packet으로 복호화
+        Packet tmpPacket;
         memcpy(tmpPacket.GetWriteBufferPtr(), s.recvBuf + processed, packetSize);
         tmpPacket.MoveWritePos(packetSize);
 

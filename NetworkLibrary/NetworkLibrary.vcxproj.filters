@@ -17,10 +17,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\CNet_Server.h">
+    <ClInclude Include="include\NetServer.h">
       <Filter>Network</Filter>
     </ClInclude>
-    <ClInclude Include="include\CPacket.h">
+    <ClInclude Include="include\Packet.h">
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="include\IPacketEncoder.h">
@@ -31,10 +31,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\CNet_Server.cpp">
+    <ClCompile Include="src\NetServer.cpp">
       <Filter>Network</Filter>
     </ClCompile>
-    <ClCompile Include="src\CPacket.cpp">
+    <ClCompile Include="src\Packet.cpp">
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="src\XorPacketEncoder.cpp">

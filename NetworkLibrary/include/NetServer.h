@@ -9,15 +9,15 @@
 
 #include <unordered_map>
 
-#include "CPacket.h"
+#include "Packet.h"
 #include "LockFreeQueue.h"
 #include "IPacketEncoder.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-class CNet_Server {
+class NetServer {
 public:
-    struct stSESSION {
+    struct Session {
         bool SessionUseFlag;
         alignas(16) volatile LONG64 ReleaseArr[2];
         unsigned __int64 SessionID;
@@ -33,10 +33,10 @@ public:
         volatile DWORD SendFlag;
         DWORD SendPacketCnt;
 
-        LockFreeQueue<CPacket*> SendQ;
-        CPacket RecvQ{4096};
+        LockFreeQueue<Packet*> SendQ;
+        Packet RecvQ{4096};
 
-        CPacket* SendBuffer[1000];
+        Packet* SendBuffer[1000];
 
         inline LONG64 IncrementSessionRef() { return InterlockedIncrement64(&ReleaseArr[1]); }
         inline LONG64 DecrementSessionRef() { return InterlockedDecrement64(&ReleaseArr[1]); }
@@ -45,8 +45,8 @@ public:
     static unsigned WINAPI AcceptThread(LPVOID lpThreadParameter);
     static unsigned WINAPI WorkerThread(LPVOID lpThreadParameter);
 
-    CNet_Server(IPacketEncoder* encoder = nullptr);
-    ~CNet_Server();
+    NetServer(IPacketEncoder* encoder = nullptr);
+    ~NetServer();
 
     bool Start(const WCHAR* serverIP, u_short serverPort, u_short workerThreadCnt_Total,
                u_short workerThreadCnt_Run, BOOL nagle, u_short connectSession_Max);
@@ -55,31 +55,31 @@ public:
     u_long GetSessionCnt_Disconnected() { return FreeSessionStack.GetUseSize(); }
     u_long GetSessionCnt_Total() { return SessionCnt_Total; }
 
-    stSESSION* FindSession(unsigned __int64 sessionID) { return &SessionArr[sessionID >> 48]; }
-    stSESSION* GetFreeSession(void);
+    Session* FindSession(unsigned __int64 sessionID) { return &SessionArr[sessionID >> 48]; }
+    Session* GetFreeSession(void);
 
     void KillSession(unsigned __int64 sessionID);
-    void DisconnectSession(stSESSION* session);
+    void DisconnectSession(Session* session);
 
-    void SendPacket(unsigned __int64 sessionID, CPacket* packet);
+    void SendPacket(unsigned __int64 sessionID, Packet* packet);
 
     virtual bool OnConnectionRequest() = 0;
     virtual void OnClientJoin(unsigned __int64 sessionID) = 0;
     virtual void OnClientLeave(unsigned __int64 sessionID) = 0;
-    virtual void OnRecv(unsigned __int64 sessionID, CPacket* packet) = 0;
+    virtual void OnRecv(unsigned __int64 sessionID, Packet* packet) = 0;
 
     /*SOCKET GetListenSocket() { return ListenSocket; }*/
     unsigned __int64 GetSessionID_New() { return ++SessionID_Cnt; }
     /*HANDLE GetIOCPHandle() { return IOCP; }*/
 
-    bool SendPost(stSESSION* session, DWORD flag = 0);
-    bool RecvPost(stSESSION* session, DWORD flag = 0);
+    bool SendPost(Session* session, DWORD flag = 0);
+    bool RecvPost(Session* session, DWORD flag = 0);
 
-    CPacket* AllocPacket(void);
-    void FreePacket(CPacket* packet);
+    Packet* AllocPacket(void);
+    void FreePacket(Packet* packet);
 
-    bool CheckPacketMessageComplete(unsigned __int64 sessionID, CPacket* recvQ);
-    bool GetPacketMessage(CPacket* packet, CPacket* recvQ);
+    bool CheckPacketMessageComplete(unsigned __int64 sessionID, Packet* recvQ);
+    bool GetPacketMessage(Packet* packet, Packet* recvQ);
 
     ////////////////////////////////////////////////////////////////////////////////
     int Log_GetPacketPoolTotal(void) { return PacketPool->GetTotalMemCnt(); }
@@ -106,8 +106,8 @@ public:
     DWORD GetAcceptTPS(void) { return InterlockedExchange(&AcceptTPS, 0); }
 
 private:
-    void ReleaseSession(stSESSION* session);
-    void initSession(stSESSION* session);
+    void ReleaseSession(Session* session);
+    void initSession(Session* session);
 
     // thread_local 캐시로 LogTransmit_Map 접근 — find/insert race 회피
     // 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
@@ -119,7 +119,7 @@ private:
     SOCKET ListenSocket;
     unsigned __int64 SessionID_Cnt;
 
-    stSESSION* SessionArr;
+    Session* SessionArr;
     u_short SessionCnt_Total;
 
 
@@ -134,8 +134,8 @@ private:
     alignas(64) unsigned __int64 AcceptTotal;
     DWORD AcceptTPS;
 
-    TLSChunkMemoryPool<CPacket>* PacketPool;
-    LockFreeStack<stSESSION*> FreeSessionStack;
+    TLSChunkMemoryPool<Packet>* PacketPool;
+    LockFreeStack<Session*> FreeSessionStack;
 
     SRWLOCK srwLogTransmitMap;
     std::unordered_map<DWORD, DWORD*>

@@ -1,13 +1,13 @@
 ﻿#pragma once
 #include <cstddef>
 
-class CPacket;
+class Packet;
 
 /**
  * @brief 패킷 인코더 인터페이스 — 송신 시 헤더 부착 + 암호화, 수신 시 복호화 + 검증.
  *
  * 라이브러리는 디폴트로 XorPacketEncoder를 사용. 사용자가 IPacketEncoder를 상속한
- * 자체 인코더(AES, ChaCha20 등)를 구현해서 CNet_Server 생성자에 주입 가능.
+ * 자체 인코더(AES, ChaCha20 등)를 구현해서 NetServer 생성자에 주입 가능.
  *
  * @note 인코더는 stateless(상수만 보유)일 것을 권장. 다중 스레드가 같은 인스턴스 공유 안전.
  *       상태 보유 시(예: 키 로테이션) 구현체가 자체 동시성 보호 필요.
@@ -22,10 +22,10 @@ public:
      * 사전 조건: packet은 Clear() 호출 후 페이로드만 << 로 채운 상태.
      * 사후 조건: packet.GetReadBufferPtr()부터 packet.GetDataSize() byte가 송신 가능 상태.
      *
-     * idempotency: CPacket의 EncodeFlag로 보호 — 같은 packet 두 번 호출해도 안전.
+     * idempotency: Packet의 EncodeFlag로 보호 — 같은 packet 두 번 호출해도 안전.
      * thread-safety: 같은 packet에 동시 호출 시 SRWLock으로 직렬화. 다른 packet은 병렬 가능.
      */
-    virtual void Encode(CPacket& packet) = 0;
+    virtual void Encode(Packet& packet) = 0;
 
     /**
      * @brief 본문 복호화 + 인증 (in-place).
@@ -36,7 +36,7 @@ public:
      *
      * 호출자 책임: 같은 packet에 두 번 호출하지 말 것 (idempotency 없음).
      */
-    virtual bool Decode(CPacket& packet) = 0;
+    virtual bool Decode(Packet& packet) = 0;
 
     /**
      * @brief 헤더 크기 (raw byte 단위).

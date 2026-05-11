@@ -1,4 +1,4 @@
-﻿//#include "CNet_Server.h"
+﻿//#include "NetServer.h"
 #include "Content.h"
 #include "ChatProtocol.h"
 
@@ -49,7 +49,7 @@ void Chat_Server::OnClientLeave(unsigned __int64 sessionID) {
 }
 
 
-void Chat_Server::OnRecv(unsigned __int64 sessionID, CPacket* packet) {
+void Chat_Server::OnRecv(unsigned __int64 sessionID, Packet* packet) {
     packet->IncrementRef();
     stJob* job = AllocJob(JobType::kMessage, sessionID, packet);
     JobQueue.Enqueue(job);
@@ -82,7 +82,7 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
 
             switch (job->type) {
                 case JobType::kMessage:
-                    server->MessageControl(job->SessionID, job->Packet);
+                    server->MessageControl(job->SessionID, job->packet);
                     break;
 
                 case JobType::kJoin:
@@ -118,7 +118,7 @@ unsigned WINAPI Chat_Server::UpdateThread_Chat_Field1(LPVOID lpThreadParameter) 
 }
 
 
-void Chat_Server::MessageControl(unsigned __int64 sessionID, CPacket* messagePacket) {
+void Chat_Server::MessageControl(unsigned __int64 sessionID, Packet* messagePacket) {
     WORD messageType;
     stCharacter* character;
 
@@ -331,7 +331,7 @@ void Chat_Server::LeaveCharacter(unsigned __int64 sessionID) {
     }
 }
 
-void Chat_Server::SendPacketAround(int sectorX, int sectorY, CPacket* packet) {
+void Chat_Server::SendPacketAround(int sectorX, int sectorY, Packet* packet) {
     int cntX, cntY;
     int targetCnt = 0;
 
@@ -359,7 +359,7 @@ void Chat_Server::SendPacketAround(int sectorX, int sectorY, CPacket* packet) {
 
 
 Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 sessionID,
-                                          CPacket* packet) {
+                                          Packet* packet) {
     TLSNodeMemoryPool<stJob>* jobPool = (TLSNodeMemoryPool<stJob>*)TlsGetValue(
         TLSChunkMemoryPool<stJob>::GetInstance()->GetTLSIndex());
     if (jobPool == NULL) {
@@ -369,7 +369,7 @@ Chat_Server::stJob* Chat_Server::AllocJob(JobType type, unsigned __int64 session
     stJob* job = jobPool->Alloc();
     job->type = type;
     job->SessionID = sessionID;
-    job->Packet = packet;
+    job->packet = packet;
 
     return job;
 }

@@ -45,14 +45,14 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\CNet_Server.h" />
-    <ClInclude Include="include\CPacket.h" />
+    <ClInclude Include="include\NetServer.h" />
+    <ClInclude Include="include\Packet.h" />
     <ClInclude Include="include\IPacketEncoder.h" />
     <ClInclude Include="include\XorPacketEncoder.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\CNet_Server.cpp" />
-    <ClCompile Include="src\CPacket.cpp" />
+    <ClCompile Include="src\NetServer.cpp" />
+    <ClCompile Include="src\Packet.cpp" />
     <ClCompile Include="src\XorPacketEncoder.cpp" />
   </ItemGroup>
   <ItemGroup>

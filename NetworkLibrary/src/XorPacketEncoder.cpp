@@ -4,7 +4,7 @@
 XorPacketEncoder::XorPacketEncoder(BYTE headerCode, BYTE encryptKey, WORD maxPayloadLen)
     : HeaderCode(headerCode), EncryptKey(encryptKey), MaxPayloadLen(maxPayloadLen) {}
 
-void XorPacketEncoder::Encode(CPacket& packet) {
+void XorPacketEncoder::Encode(Packet& packet) {
     // idempotency: 이미 Encode된 packet은 다시 처리 안 함 (재전송 시나리오 보호)
     if (packet.CheckFlag_Encode())
         return;
@@ -45,7 +45,7 @@ void XorPacketEncoder::Encode(CPacket& packet) {
     packet.UnlockPacket();
 }
 
-bool XorPacketEncoder::Decode(CPacket& packet) {
+bool XorPacketEncoder::Decode(Packet& packet) {
     NetHeader* header = (NetHeader*)packet.GetReadBufferPtr();
     BYTE RK = header->RKey;
     BYTE checksum = 0;

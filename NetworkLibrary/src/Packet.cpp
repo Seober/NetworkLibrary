@@ -1,9 +1,9 @@
-﻿#include "CPacket.h"
+﻿#include "Packet.h"
 
 #include <windows.h>
 
 
-CPacket::CPacket(int bufferSize) {
+Packet::Packet(int bufferSize) {
     RefCnt = 0;
     BufferSize = bufferSize;
     Front = 0;
@@ -16,8 +16,8 @@ CPacket::CPacket(int bufferSize) {
     EncodeFlag = false;
 }
 
-CPacket::~CPacket(void) {
+Packet::~Packet(void) {
     delete Buffer;
 }
 
-void CPacket::Release(void) {}
+void Packet::Release(void) {}

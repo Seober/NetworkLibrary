@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "IPacketEncoder.h"
-#include "CPacket.h"
+#include "Packet.h"
 #include <windows.h>
 
 /**
@@ -21,8 +21,8 @@ public:
      */
     XorPacketEncoder(BYTE headerCode = 0x77, BYTE encryptKey = 0x32, WORD maxPayloadLen = 4096);
 
-    void Encode(CPacket& packet) override;
-    bool Decode(CPacket& packet) override;
+    void Encode(Packet& packet) override;
+    bool Decode(Packet& packet) override;
 
     std::size_t GetHeaderSize() const override;
     bool VerifyHeaderMagic(const void* headerBytes) const override;
@@ -38,10 +38,10 @@ private:
     };
 #pragma pack(pop)
 
-    // 헤더가 CPacket의 reserve 공간(kHeaderDefault)에 들어가야 함.
-    // 더 큰 헤더 인코더 도입 시 CPacket API 확장 필요 (Phase 3b/3c).
-    static_assert(sizeof(NetHeader) <= CPacket::kHeaderDefault,
-                  "XorPacketEncoder NetHeader exceeds CPacket reserve space (kHeaderDefault)");
+    // 헤더가 Packet의 reserve 공간(kHeaderDefault)에 들어가야 함.
+    // 더 큰 헤더 인코더 도입 시 Packet API 확장 필요 (Phase 3b/3c).
+    static_assert(sizeof(NetHeader) <= Packet::kHeaderDefault,
+                  "XorPacketEncoder NetHeader exceeds Packet reserve space (kHeaderDefault)");
 
     BYTE HeaderCode;
     BYTE EncryptKey;
