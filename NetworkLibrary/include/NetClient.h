@@ -60,6 +60,7 @@ public:
     Session* GetFreeSession(void);
 
     void KillSession(unsigned __int64 sessionID);
+    void Disconnect(unsigned __int64 sessionID);   // 사용자 요청 disconnect (KillSession wrapper)
     void DisconnectSession(Session* session);
 
     void SendPacket(unsigned __int64 sessionID, Packet* packet);
