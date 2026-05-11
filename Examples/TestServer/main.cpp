@@ -68,8 +68,9 @@ int main(void) {
         wprintf(L"\n====================================[loopCnt:%I64u]================================"
                 L"=====\n",
                 loopCnt++);
-        wprintf(L"SessionCnt:%d (Connected:%d, Disconnected:%d)\n", server.GetTotalSessionCnt(),
-                server.GetConnectedSessionCnt(), server.GetDisconnectedSessionCnt());
+        wprintf(L"SessionPool[Capacity:%d / Connected:%d / Free:%d]\n",
+                server.GetTotalSessionCnt(), server.GetConnectedSessionCnt(),
+                server.GetDisconnectedSessionCnt());
         wprintf(L"[Network]\t> RecvTPS:%d, RecvBytes:%d kB\n", transmitBuffer[0],
                 transmitBuffer[1] / 1000);
         wprintf(L"[Network]\t> SendTPS:%d, SendBytes:%d kB\n", transmitBuffer[2],
