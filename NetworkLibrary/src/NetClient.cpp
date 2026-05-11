@@ -426,6 +426,12 @@ void NetClient::KillSession(unsigned __int64 sessionID) {
         session->DecrementSessionRef();
 }
 
+// 사용자 요청 disconnect — 현재는 KillSession과 동일 동작 (wrapper)
+// 향후 graceful disconnect (SendQ flush 후 close) 분기 시 본체 분리 예정
+void NetClient::Disconnect(unsigned __int64 sessionID) {
+    KillSession(sessionID);
+}
+
 void NetClient::DisconnectSession(Session* session) {
     LONG64 compareArr[2] = {FALSE, 0};
     if (InterlockedCompareExchange128(session->ReleaseArr, 0, TRUE, compareArr)) {

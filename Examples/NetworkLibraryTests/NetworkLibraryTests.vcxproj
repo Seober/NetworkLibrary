@@ -59,6 +59,7 @@
     <ClCompile Include="test_sanity.cpp" />
     <ClCompile Include="test_packet.cpp" />
     <ClCompile Include="test_xor_encoder.cpp" />
+    <ClCompile Include="test_netclient_loopback.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NetworkLibrary\NetworkLibrary.vcxproj">
