@@ -131,35 +131,6 @@ int main(void) {
             L"\n");
         wprintf(L"\n\n\n");
 
-
-        //server.GetTransmit(transmitBuffer);
-
-        //wprintf(L"\n====================================[loopCnt:%I64u]=====================================\n", loopCnt++);
-        //wprintf(L"sessionCnt:%d, CharacterCnt:%d\n\n", server.GetConnectedSessionCnt(), server.GetCharacterSize());
-        //wprintf(L"[Network_Logic]\t> RecvTPS:%d, RecvBytes:%d B\n", transmitBuffer[0], transmitBuffer[1]);
-        //wprintf(L"[Network_Logic]\t> SendTPS:%d, SendBytes:%d B\n", transmitBuffer[2], transmitBuffer[3]);
-        //wprintf(L"[Network_Logic]\t> AcceptTotal:%I64u\t\tAcceptTPS:%d\n\n", server.GetAcceptTotal(), server.GetAcceptTPS());
-        //wprintf(L"[ChunckPool_Packet]\t> Total:%d\tUse:%d\tFree:%d\n", server.LogGetPacketPoolTotal(), server.LogGetPacketPoolUse(), server.LogGetPacketPoolFree());
-        //wprintf(L"[ChunckPool_Job]\t> Total:%d\tUse:%d\tFree:%d\n", server.LogGetJobPoolTotal(), server.LogGetJobPoolUse(), server.LogGetJobPoolFree());
-        ///*wprintf(L"[ChunckPool_Packet]\t> FreePacketChunck:%d\tPoolTotal:%d\n", server.GetStackSize(), server.GetTotalPoolCnt());
-        //wprintf(L"[ChunckPool_SendQ]\t> FreeLFQChunck:%d\tPoolTotal:%d\n", LockFreeQueue<Packet*>::GetStackSize(), LockFreeQueue<Packet*>::GetPool_TotalSize());
-        //wprintf(L"[ChunckPool_Job]\t> FreeJobChunck:%d\tPoolTotal:%d\n\n", server.LogJobQueueStackSize(), server.LogJobQueueTotalPool());
-        //wprintf(L"[CharacterPool]\t> Total:%d\tUse:%d\tFree:%d\n", server.LogGetCharacterPoolTotal(), server.LogGetCharacterPoolUse(), server.LogGetCharacterPoolFree());*/
-        //wprintf(L"[JobQueue]\t> RemainJob:%d\tJob/s:%d\n", server.RemainJob(), server.GetJobTPS());
-        //wprintf(L"[UpdateThread]\t> SleepTime/s:%d ms\tRunningTime/s:%d\n", server.GetThreadRunningTime(), server.GetThreadRunningTPS());
-        //wprintf(L"====================================================================================\n");
-        //monitor.UpdateAll();
-
-        //wprintf(L"[CPU]\t\t> Total:%f%%\tUser:%f%%\t\tKernel:%f%%\n", monitor.ProcessorTotal(), monitor.ProcessorUser(), monitor.ProcessorKernel());
-        //wprintf(L"[Process]\t> Total:%f%%\tUser:%f%%\t\tKernel:%f%%\n\n", monitor.ProcessTotal(), monitor.ProcessUser(), monitor.ProcessKernel());
-
-        //wprintf(L"[Process]\t> UserAllocMemory:%u B\t\tNonPagedMemory:%d B\n", monitor.ProcessUserAllocMemory(), monitor.ProcessNonPagedMemory());
-        //wprintf(L"[PC]\t\t> AvailableMemory:%d MB\t\tNonPagedMemory:%d B\n\n", monitor.AvailableMemory(), monitor.NonpagedMemory());
-
-        //wprintf(L"[Network]\t> RecvBytes:%f B\t\tSendBytes:%f B\n", monitor.NetworkRecvBytes(), monitor.NetworkSendBytes());
-        //wprintf(L"====================================================================================\n");
-        //wprintf(L"\n\n\n");
-
         Sleep(1000);
     }
 

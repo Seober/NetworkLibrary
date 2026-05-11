@@ -60,13 +60,6 @@ public:
     int GetThreadRunningTime(void) { return InterlockedExchange(&UpdateThreadSleepTime, 0); }
     int GetThreadRunningTPS(void) { return InterlockedExchange(&UpdateThreadRunningTPS, 0); }
     int GetJobTPS(void) { return InterlockedExchange(&JobTPS, 0); }
-    int LogJobQueueStackSize(void) { return JobQueue.GetStackSize(); }
-    int LogJobQueueTotalPool(void) { return JobQueue.GetPool_TotalSize(); }
-    int getGetPool_UseSize(void) { return JobQueue.GetPool_UseSize(); }
-    int LogJobQueueFreePool(void) { return JobQueue.GetPool_FreeSize(); }
-    int LogGetCharacterPoolTotal(void) { return CharacterPool.GetTotalMemCnt(); }
-    int LogGetCharacterPoolUse(void) { return CharacterPool.GetUseMemCnt(); }
-    int LogGetCharacterPoolFree(void) { return CharacterPool.GetFreeMemCnt(); }
 
     int LogGetJobPoolTotal(void) {
         return TLSChunkMemoryPool<Job>::GetInstance()->GetTotalMemCnt();
