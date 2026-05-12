@@ -52,7 +52,7 @@ private:
 
     LogLevel MinLevel;
 
-    unsigned __int64 LogCnt;
+    LONG64 LogCnt;
 
 
     static long KeySingleton;

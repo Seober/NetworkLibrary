@@ -13,7 +13,7 @@ Logger::Logger() {
 
 void Logger::Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, ...) {
     if (MinLevel <= level) {
-        unsigned __int64 logCnt = InterlockedIncrement(&LogCnt);
+        LONG64 logCnt = InterlockedIncrement64(&LogCnt);
 
         int retval_FileName;
         int retval_LogTag;
@@ -34,7 +34,7 @@ void Logger::Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, .
             case LogLevel::kDebug:
                 retval_LogTag = StringCchPrintf(
                     logTag, kBufsizeLogTag,
-                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / DEBUG] [%08I64u] ", type,
+                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / DEBUG] [%08I64d] ", type,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, logCnt);
                 break;
@@ -42,7 +42,7 @@ void Logger::Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, .
             case LogLevel::kError:
                 retval_LogTag = StringCchPrintf(
                     logTag, kBufsizeLogTag,
-                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / ERROR] [%08I64u] ", type,
+                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / ERROR] [%08I64d] ", type,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, logCnt);
                 break;
@@ -50,14 +50,14 @@ void Logger::Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, .
             case LogLevel::kSystem:
                 retval_LogTag = StringCchPrintf(
                     logTag, kBufsizeLogTag,
-                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / SYSTEM] [%08I64u] ", type,
+                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / SYSTEM] [%08I64d] ", type,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, logCnt);
                 break;
             default:
                 retval_LogTag = StringCchPrintf(
                     logTag, kBufsizeLogTag,
-                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / OutOfRange] [%08I64u] ", type,
+                    L"\n[%s] [%hd-%02hd-%02hd %02hd:%02hd:%02hd / OutOfRange] [%08I64d] ", type,
                     stNowTime.wYear, stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour,
                     stNowTime.wMinute, stNowTime.wSecond, logCnt);
                 break;
