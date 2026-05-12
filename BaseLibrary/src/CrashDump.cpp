@@ -34,7 +34,7 @@ void CrashDump::Crash(void) {
 LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPointer) {
     SYSTEMTIME stNowTime;
 
-    long DumpCount = InterlockedIncrement(&DumpCount);
+    long dumpCount = InterlockedIncrement(&DumpCount);
 
     // 현재 프로세스의 메모리 사용량 >> 사용량에 비례해서 덤프파일 사이즈가 나올 것이기 때문에 필요없는 로직
     /*HANDLE hProcess = 0;
@@ -53,7 +53,7 @@ LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPoint
 
     GetLocalTime(&stNowTime);
     wsprintf(filename, L"Dump_%d%02d%02d_%02d.%02d.%02d_%d.dmp", stNowTime.wYear, stNowTime.wMonth,
-             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond, DumpCount);
+             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond, dumpCount);
     wprintf(L"\n\n\n!!! Crash Error !!! %d.%d.%d / %d:%d:%d\n", stNowTime.wYear, stNowTime.wMonth,
             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond);
     wprintf(L"Now Save Dump File...\n");
