@@ -22,7 +22,6 @@ public:
     }
 
     void FreeChunck(void* chunck) {
-        int ChunckSize = kChunkDefault;
         InterlockedExchangeAdd(&UseSize, -kChunkDefault);
         InterlockedExchangeAdd(&FreeSize, kChunkDefault);
         ChunckStack.Push(chunck);
