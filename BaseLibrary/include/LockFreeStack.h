@@ -10,8 +10,8 @@ public:
     static constexpr unsigned __int64 kMaxMemoryRange = 0x00007ffffffeffff;
 
     struct stNode {
-        T Data = NULL;
-        stNode* Next = NULL;
+        T Data = nullptr;
+        stNode* Next = nullptr;
     };
 
     struct BitField {
@@ -102,7 +102,7 @@ T LockFreeStack<T>::Pop(void) {
 
     if (InterlockedExchangeAdd(&Size, -1) <= 0) {
         InterlockedExchangeAdd(&Size, 1);
-        return NULL;
+        return nullptr;
     }
     do {
         OldTop = Top;
@@ -125,7 +125,7 @@ bool LockFreeStack<T>::Pop(T& tData) {
 
     if (InterlockedExchangeAdd(&Size, -1) <= 0) {
         InterlockedExchangeAdd(&Size, 1);
-        tData = NULL;
+        tData = nullptr;
         return false;
     }
     do {

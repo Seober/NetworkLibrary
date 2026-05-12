@@ -11,8 +11,8 @@ public:
 
 private:
     struct stNode {
-        T Data = NULL;
-        stNode* Next = NULL;
+        T Data = nullptr;
+        stNode* Next = nullptr;
         short RefCnt = 0;
         short DeleteFlag = 0;
 
@@ -70,7 +70,7 @@ private:
     inline stNode* AllocNode(void) {
         TLSNodeMemoryPool<stNode>* nodePool = (TLSNodeMemoryPool<stNode>*)TlsGetValue(
             TLSChunkMemoryPool<stNode>::GetInstance()->GetTLSIndex());
-        if (nodePool == NULL) {
+        if (nodePool == nullptr) {
             nodePool = new TLSNodeMemoryPool<stNode>;
             nodePool->SetTLS();
         }
@@ -81,7 +81,7 @@ private:
     inline void FreeNode(stNode* node) {
         TLSNodeMemoryPool<stNode>* nodePool = (TLSNodeMemoryPool<stNode>*)TlsGetValue(
             TLSChunkMemoryPool<stNode>::GetInstance()->GetTLSIndex());
-        if (nodePool == NULL) {
+        if (nodePool == nullptr) {
             nodePool = new TLSNodeMemoryPool<stNode>;
             nodePool->SetTLS();
         }
@@ -111,7 +111,7 @@ LockFreeQueue<T>::LockFreeQueue(void) {
 
     /*Head = NodePool.Alloc();*/
     Head = AllocNode();
-    Head->Next = NULL;
+    Head->Next = nullptr;
     Head->IncrementRef();
     Tail = Head;
 }
@@ -122,7 +122,7 @@ void LockFreeQueue<T>::Enqueue(T data) {
     stNode_TAGED Next;
     stNode_TAGED NewNode = AllocNode();
     NewNode->Data = data;
-    NewNode->Next = NULL;
+    NewNode->Next = nullptr;
     NewNode->IncrementRef();
     NewNode.SetTag(GetTagCnt());
 
@@ -132,7 +132,7 @@ void LockFreeQueue<T>::Enqueue(T data) {
         Next = Tail->Next;
 
         if (OldTail == Tail) {
-            if (Next.Data == NULL) {
+            if (Next.Data == nullptr) {
                 if (OldTail.CAS_Next(NewNode.Data, Next.Data)) {
                     Tail.CAS(NewNode.Data, OldTail.Data);
 
@@ -159,7 +159,7 @@ template <typename T>
 bool LockFreeQueue<T>::Dequeue(T& tData) {
     if (InterlockedExchangeAdd(&Size, -1) <= 0) {
         InterlockedExchangeAdd(&Size, 1);
-        tData = NULL;
+        tData = nullptr;
         return false;
     }
 
@@ -204,7 +204,7 @@ void LockFreeQueue<T>::Clear(void) {
         tmpHead = Head;
         Next = tmpHead->Next;
 
-        if (Next == NULL)
+        if (Next == nullptr)
             break;
 
         Head = Next;

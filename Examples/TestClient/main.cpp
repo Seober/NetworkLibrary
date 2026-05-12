@@ -147,7 +147,7 @@ int wmain(int argc, WCHAR* argv[]) {
     char serverIp[64] = DEFAULT_IP;
     int serverPort = DEFAULT_PORT;
     if (argc >= 2)
-        WideCharToMultiByte(CP_ACP, 0, argv[1], -1, serverIp, sizeof(serverIp), NULL, NULL);
+        WideCharToMultiByte(CP_ACP, 0, argv[1], -1, serverIp, sizeof(serverIp), nullptr, nullptr);
     if (argc >= 3)
         serverPort = _wtoi(argv[2]);
 
@@ -230,7 +230,7 @@ int wmain(int argc, WCHAR* argv[]) {
     }
 
     // Sender thread 시작
-    HANDLE shutdownEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    HANDLE shutdownEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     SenderContext ctx;
     ctx.client = &client;
     strcpy_s(ctx.serverIP, serverIp);
@@ -244,7 +244,7 @@ int wmain(int argc, WCHAR* argv[]) {
     ctx.reconnectMax = reconnectMax;
     ctx.shutdownEvent = shutdownEvent;
 
-    HANDLE senderHandle = (HANDLE)_beginthreadex(NULL, 0, SenderThread, &ctx, 0, NULL);
+    HANDLE senderHandle = (HANDLE)_beginthreadex(nullptr, 0, SenderThread, &ctx, 0, nullptr);
 
     wprintf(L"\nPress Q to quit\n\n");
 

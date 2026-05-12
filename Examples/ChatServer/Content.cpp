@@ -10,7 +10,7 @@ WCHAR MessageBuf[kMessageBufsize];
 ChatServer::ChatServer(int maxUser, bool heartBeatFlag) {
     ContentThread = INVALID_HANDLE_VALUE;
     TimerThread5000 = INVALID_HANDLE_VALUE;
-    JobEvent = CreateEvent(NULL, false, false, NULL);
+    JobEvent = CreateEvent(nullptr, false, false, nullptr);
 
     MaxUser = maxUser;
 
@@ -23,10 +23,10 @@ ChatServer::ChatServer(int maxUser, bool heartBeatFlag) {
     pLogger = Logger::GetInstance();
 
     ContentThread =
-        (HANDLE)_beginthreadex(NULL, 0, UpdateThreadFunc, (LPVOID)this, 0, NULL);
+        (HANDLE)_beginthreadex(nullptr, 0, UpdateThreadFunc, (LPVOID)this, 0, nullptr);
     if (heartBeatFlag)
         TimerThread5000 =
-            (HANDLE)_beginthreadex(NULL, 0, HeartbeatTimerThread, (LPVOID)this, 0, NULL);
+            (HANDLE)_beginthreadex(nullptr, 0, HeartbeatTimerThread, (LPVOID)this, 0, nullptr);
 }
 
 
@@ -38,12 +38,12 @@ bool ChatServer::OnConnectionRequest() {
 }
 
 void ChatServer::OnClientJoin(unsigned __int64 sessionID) {
-    Job* job = AllocJob(JobType::kJoin, sessionID, NULL);
+    Job* job = AllocJob(JobType::kJoin, sessionID, nullptr);
     JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
 void ChatServer::OnClientLeave(unsigned __int64 sessionID) {
-    Job* job = AllocJob(JobType::kLeave, sessionID, NULL);
+    Job* job = AllocJob(JobType::kLeave, sessionID, nullptr);
     JobQueue.Enqueue(job);
     SetEvent(JobEvent);
 }
@@ -61,7 +61,7 @@ unsigned WINAPI ChatServer::HeartbeatTimerThread(LPVOID lpThreadParameter) {
     Job* job;
 
     while (1) {
-        job = server->AllocJob(JobType::kHeartbeat, NULL, NULL);
+        job = server->AllocJob(JobType::kHeartbeat, nullptr, nullptr);
         server->JobQueue.Enqueue(job);
         SetEvent(server->JobEvent);
 
@@ -123,7 +123,7 @@ void ChatServer::MessageControl(unsigned __int64 sessionID, Packet* messagePacke
     Character* character;
 
     character = FindCharacter(sessionID);
-    if (character == NULL) {
+    if (character == nullptr) {
         pLogger->Log(L"Content", Logger::LogLevel::kError, L"# Character Not Exist #");
         pLogger->Crash();
     }
@@ -270,7 +270,7 @@ void ChatServer::MessageControl(unsigned __int64 sessionID, Packet* messagePacke
 
 ChatServer::Character* ChatServer::CreateCharacter(unsigned __int64 sessionID) {
     if (CharacterMap.find(sessionID) != CharacterMap.end())
-        return NULL;
+        return nullptr;
 
     Character* character = CharacterPool.Alloc();
     character->SessionID = sessionID;
@@ -285,7 +285,7 @@ ChatServer::Character* ChatServer::CreateCharacter(unsigned __int64 sessionID) {
 ChatServer::Character* ChatServer::FindCharacter(unsigned __int64 sessionID) {
     std::map<unsigned __int64, Character*>::iterator iter_Find = CharacterMap.find(sessionID);
     if (iter_Find == CharacterMap.end())
-        return NULL;
+        return nullptr;
     return iter_Find->second;
 }
 
@@ -308,7 +308,7 @@ void ChatServer::CheckHeartBeat(void) {
 
 void ChatServer::LeaveCharacter(unsigned __int64 sessionID) {
     Character* character = FindCharacter(sessionID);
-    if (character != NULL) {
+    if (character != nullptr) {
         CharacterMap.erase(sessionID);
 
         if (character->SectorX >= 0 && character->SectorY >= 0) {
@@ -362,7 +362,7 @@ ChatServer::Job* ChatServer::AllocJob(JobType type, unsigned __int64 sessionID,
                                           Packet* packet) {
     TLSNodeMemoryPool<Job>* jobPool = (TLSNodeMemoryPool<Job>*)TlsGetValue(
         TLSChunkMemoryPool<Job>::GetInstance()->GetTLSIndex());
-    if (jobPool == NULL) {
+    if (jobPool == nullptr) {
         jobPool = new TLSNodeMemoryPool<Job>;
         jobPool->SetTLS();
     }
@@ -378,7 +378,7 @@ ChatServer::Job* ChatServer::AllocJob(JobType type, unsigned __int64 sessionID,
 void ChatServer::FreeJob(Job* job) {
     TLSNodeMemoryPool<Job>* jobPool = (TLSNodeMemoryPool<Job>*)TlsGetValue(
         TLSChunkMemoryPool<Job>::GetInstance()->GetTLSIndex());
-    if (jobPool == NULL) {
+    if (jobPool == nullptr) {
         jobPool = new TLSNodeMemoryPool<Job>;
         jobPool->SetTLS();
     }

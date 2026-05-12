@@ -8,7 +8,7 @@
 #include "MonitoringTool.h"
 
 
-#define SERVER_IP NULL
+#define SERVER_IP nullptr
 #define SERVER_PORT 12001
 
 #define MAX_USER 16000

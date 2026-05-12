@@ -43,7 +43,7 @@ LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPoint
 
 	hProcess = GetCurrentProcess();
 
-	if (hProcess == NULL) return 0;
+	if (hProcess == nullptr) return 0;
 
 	if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) iWorkingMemory = (int)(pmc.WorkingSetSize / 1024 / 1024);
 	CloseHandle(hProcess);*/
@@ -58,8 +58,8 @@ LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPoint
             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond);
     wprintf(L"Now Save Dump File...\n");
 
-    HANDLE dumpFile = ::CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS,
-                                   FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE dumpFile = ::CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS,
+                                   FILE_ATTRIBUTE_NORMAL, nullptr);
 
     if (dumpFile != INVALID_HANDLE_VALUE) {
         _MINIDUMP_EXCEPTION_INFORMATION MinidumpExceptionInformation;
@@ -69,7 +69,7 @@ LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPoint
         MinidumpExceptionInformation.ClientPointers = TRUE;
 
         MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), dumpFile,
-                          MiniDumpWithFullMemory, &MinidumpExceptionInformation, NULL, NULL);
+                          MiniDumpWithFullMemory, &MinidumpExceptionInformation, nullptr, nullptr);
 
         CloseHandle(dumpFile);
         wprintf(L"CrashDump Save Finish !");

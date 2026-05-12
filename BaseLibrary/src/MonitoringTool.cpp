@@ -15,8 +15,8 @@ MonitoringTool::MonitoringTool(HANDLE process) {
     WCHAR* ptr = wcstok_s(processNameBuf, L"\\", &context);
     do {
         befPtr = ptr;
-        ptr = wcstok_s(NULL, L"\\", &context);
-    } while (ptr != NULL);
+        ptr = wcstok_s(nullptr, L"\\", &context);
+    } while (ptr != nullptr);
 
     ptr = befPtr;
 
@@ -52,17 +52,17 @@ MonitoringTool::MonitoringTool(HANDLE process) {
     ProcessLastKernel.QuadPart = 0;
     ProcessLastTime.QuadPart = 0;
 
-    PdhOpenQuery(NULL, NULL, &QueryPDH);
+    PdhOpenQuery(nullptr, nullptr, &QueryPDH);
 
     WCHAR strBuf[1024];
     wsprintf(strBuf, L"\\Process(%s)\\Private Bytes", ptr);
-    PdhAddCounter(QueryPDH, strBuf, NULL, &CounterProcessUserAllocMemory);
+    PdhAddCounter(QueryPDH, strBuf, nullptr, &CounterProcessUserAllocMemory);
 
     wsprintf(strBuf, L"\\Process(%s)\\Pool Nonpaged Bytes", ptr);
-    PdhAddCounter(QueryPDH, strBuf, NULL, &CounterProcessNonPagedMemory);
+    PdhAddCounter(QueryPDH, strBuf, nullptr, &CounterProcessNonPagedMemory);
 
-    PdhAddCounter(QueryPDH, L"\\Memory\\Available MBytes", NULL, &CounterAvailableMemory);
-    PdhAddCounter(QueryPDH, L"\\Memory\\Pool Nonpaged Bytes", NULL, &CounterNonPagedMemory);
+    PdhAddCounter(QueryPDH, L"\\Memory\\Available MBytes", nullptr, &CounterAvailableMemory);
+    PdhAddCounter(QueryPDH, L"\\Memory\\Pool Nonpaged Bytes", nullptr, &CounterNonPagedMemory);
 
     /*
 	쿼리 추가필요 시 https://docs.microsoft.com/ko-kr/windows/win32/perfctrs/browsing-performance-counters를 통해 쿼리를 얻고 하드코딩
@@ -72,21 +72,21 @@ MonitoringTool::MonitoringTool(HANDLE process) {
     //네트워크 트래픽
     int cnt = 0;
     bool err = false;
-    WCHAR* cur = NULL;
-    WCHAR* counters = NULL;
-    WCHAR* interfaces = NULL;
+    WCHAR* cur = nullptr;
+    WCHAR* counters = nullptr;
+    WCHAR* interfaces = nullptr;
     DWORD counterSize = 0, interfaceSize = 0;
     WCHAR query[1024] = {
         0,
     };
 
-    // 먼저 버퍼길이를 얻기 위해 Out BUffer 파라미터를 NULL을 넣어 사이즈만 확인
-    PdhEnumObjectItems(NULL, NULL, L"Network Interface", counters, &counterSize, interfaces,
+    // 먼저 버퍼길이를 얻기 위해 Out BUffer 파라미터를 nullptr를 넣어 사이즈만 확인
+    PdhEnumObjectItems(nullptr, nullptr, L"Network Interface", counters, &counterSize, interfaces,
                        &interfaceSize, PERF_DETAIL_WIZARD, 0);
     counters = new WCHAR[counterSize];
     interfaces = new WCHAR[interfaceSize];
 
-    if (PdhEnumObjectItems(NULL, NULL, L"Network Interface", counters, &counterSize,
+    if (PdhEnumObjectItems(nullptr, nullptr, L"Network Interface", counters, &counterSize,
                            interfaces, &interfaceSize, PERF_DETAIL_WIZARD,
                            0) != ERROR_SUCCESS) {
         delete[] counters;
@@ -105,12 +105,12 @@ MonitoringTool::MonitoringTool(HANDLE process) {
         query[0] = L'\0';
         StringCbPrintf(query, sizeof(WCHAR) * 1024,
                        L"\\Network Interface(%s)\\Bytes Received/sec", cur);
-        PdhAddCounter(QueryPDH, query, NULL,
+        PdhAddCounter(QueryPDH, query, nullptr,
                       &EthernetStruct[cnt].PDHCounterNetworkRecvBytes);
         query[0] = L'\0';
         StringCbPrintf(query, sizeof(WCHAR) * 1024, L"\\Network Interface(%s)\\Bytes Sent/sec",
                        cur);
-        PdhAddCounter(QueryPDH, query, NULL,
+        PdhAddCounter(QueryPDH, query, nullptr,
                       &EthernetStruct[cnt].PDHCounterNetworkSendBytes);
     }
 
@@ -202,26 +202,26 @@ void MonitoringTool::UpdateQuery() {
 
     PDH_FMT_COUNTERVALUE counterVal;
 
-    PdhGetFormattedCounterValue(CounterProcessUserAllocMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterProcessUserAllocMemory, PDH_FMT_LONG, nullptr, &counterVal);
     ProcessUserAllocMemory_ = counterVal.longValue;
 
-    PdhGetFormattedCounterValue(CounterProcessNonPagedMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterProcessNonPagedMemory, PDH_FMT_LONG, nullptr, &counterVal);
     ProcessNonPagedMemory_ = counterVal.longValue;
 
-    PdhGetFormattedCounterValue(CounterAvailableMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterAvailableMemory, PDH_FMT_LONG, nullptr, &counterVal);
     AvailableMemory_ = counterVal.longValue;
 
-    PdhGetFormattedCounterValue(CounterNonPagedMemory, PDH_FMT_LONG, NULL, &counterVal);
+    PdhGetFormattedCounterValue(CounterNonPagedMemory, PDH_FMT_LONG, nullptr, &counterVal);
     NonPagedMemory_ = counterVal.longValue;
 
     /////////////////////////////////////////////
     for (int cnt = 0; cnt < kPdhEthernetMax; cnt++) {
         if (EthernetStruct[cnt].Use) {
             if (PdhGetFormattedCounterValue(EthernetStruct[cnt].PDHCounterNetworkRecvBytes,
-                                            PDH_FMT_DOUBLE, NULL, &counterVal) == ERROR_SUCCESS)
+                                            PDH_FMT_DOUBLE, nullptr, &counterVal) == ERROR_SUCCESS)
                 PDHValueNetworkRecvBytes += counterVal.doubleValue;
             if (PdhGetFormattedCounterValue(EthernetStruct[cnt].PDHCounterNetworkSendBytes,
-                                            PDH_FMT_DOUBLE, NULL, &counterVal) == ERROR_SUCCESS)
+                                            PDH_FMT_DOUBLE, nullptr, &counterVal) == ERROR_SUCCESS)
                 PDHValueNetworkSendBytes += counterVal.doubleValue;
         }
     }

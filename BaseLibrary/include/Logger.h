@@ -16,9 +16,9 @@ public:
     void Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, ...);
 
     static Logger* GetInstance(void) {
-        if (pLogger == NULL) {
+        if (pLogger == nullptr) {
             Lock();
-            if (pLogger == NULL) {
+            if (pLogger == nullptr) {
                 pLogger = new Logger;
                 atexit(Destroy);
             }
@@ -43,7 +43,7 @@ private:
 
     static void Destroy(void) {
         delete pLogger;
-        pLogger = NULL;
+        pLogger = nullptr;
     }
 
 

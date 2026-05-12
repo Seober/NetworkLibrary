@@ -15,7 +15,7 @@ public:
     struct stNode {  //abcdef
         PadType PadUnderflow = kPadUnderflow;
         T Data;
-        stNode* Next = NULL;
+        stNode* Next = nullptr;
         PadType PadOverflow = kPadOverflow;
     };
 
@@ -74,7 +74,7 @@ private:
 
         if (InterlockedExchangeAdd(&FreeNodeCnt, -1) <= 0) {
             InterlockedExchangeAdd(&FreeNodeCnt, 1);
-            return NULL;
+            return nullptr;
         }
 
         do {
@@ -125,7 +125,7 @@ template <typename T>
 void LockFreeMemoryPool<T>::ClearMemoryPool(void) {
     while (1) {
         stNode* deleteNode = PopFromFreeNode();
-        if (deleteNode == NULL)
+        if (deleteNode == nullptr)
             break;
         delete deleteNode;
     }
@@ -164,7 +164,7 @@ void LockFreeMemoryPool<T>::Free(T* target) {
     stNode* node = (stNode*)((char*)target - sizeof(PadType));
     if (node->PadUnderflow != kPadUnderflow ||
         node->PadOverflow != kPadOverflow) {
-        char* Err_Make = NULL;
+        char* Err_Make = nullptr;
         *Err_Make = 10;
     }
 

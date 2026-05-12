@@ -45,7 +45,7 @@ int main(void) {
         nagleFlag = TRUE;
 
     EchoServer server;
-    if (!server.Start(NULL, DEFAULT_PORT, processorCnt, 0, nagleFlag, MAX_USER * 2))
+    if (!server.Start(nullptr, DEFAULT_PORT, processorCnt, 0, nagleFlag, MAX_USER * 2))
         return 0;
 
     wprintf(L"\n=== TestServer (pure echo) Listening on port %d ===\n\n", DEFAULT_PORT);

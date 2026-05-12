@@ -25,7 +25,7 @@ int wmain(int argc, WCHAR* argv[]) {
     int messageInterval = 0;
 
     if (argc >= 2)
-        WideCharToMultiByte(CP_ACP, 0, argv[1], -1, serverIp, sizeof(serverIp), NULL, NULL);
+        WideCharToMultiByte(CP_ACP, 0, argv[1], -1, serverIp, sizeof(serverIp), nullptr, nullptr);
     if (argc >= 3)
         serverPort = _wtoi(argv[2]);
 
@@ -101,7 +101,7 @@ int wmain(int argc, WCHAR* argv[]) {
 
     // 세션 배열 할당
     ClientSession* sessions = (ClientSession*)calloc(N, sizeof(ClientSession));
-    if (sessions == NULL) {
+    if (sessions == nullptr) {
         wprintf(L"Memory alloc failed\n");
         WSACleanup();
         return 1;
@@ -117,7 +117,7 @@ int wmain(int argc, WCHAR* argv[]) {
     volatile LONG64 totalSent = 0, totalRecv = 0;
 
     // shutdown event
-    HANDLE shutdownEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    HANDLE shutdownEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 
     // 인코더 — 모든 워커 스레드가 공유. main 스택에서 생성, 워커보다 오래 살아있음 보장.
     // 디폴트는 ChatServer와 같은 XOR (0x77, 0x32). 다른 알고리즘 사용 시 IPacketEncoder 상속해서 인스턴스만 교체.
@@ -150,7 +150,7 @@ int wmain(int argc, WCHAR* argv[]) {
         ctxArr[t].TotalSent = &totalSent;
         ctxArr[t].TotalRecv = &totalRecv;
 
-        threadHandles[t] = (HANDLE)_beginthreadex(NULL, 0, WorkerThreadFunc, &ctxArr[t], 0, NULL);
+        threadHandles[t] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThreadFunc, &ctxArr[t], 0, nullptr);
 
         sessionIdx += thisCount;
     }

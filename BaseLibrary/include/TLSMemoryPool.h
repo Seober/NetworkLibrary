@@ -13,7 +13,7 @@ public:
         if (ChunckStack.Pop(chunck) == false) {
             InterlockedExchangeAdd(&TotalSize, kChunkDefault);
             InterlockedExchangeAdd(&UseSize, kChunkDefault);
-            chunck = NULL;
+            chunck = nullptr;
         } else {
             InterlockedExchangeAdd(&FreeSize, -kChunkDefault);
             InterlockedExchangeAdd(&UseSize, kChunkDefault);
@@ -30,9 +30,9 @@ public:
 
 
     static TLSChunkMemoryPool* GetInstance(void) {
-        if (pChunckPool == NULL) {
+        if (pChunckPool == nullptr) {
             Lock();
-            if (pChunckPool == NULL) {
+            if (pChunckPool == nullptr) {
 #pragma warning(push)
 #pragma warning(disable : 4316)  // Phase 3 C++17 진입(/Zc:alignedNew) 시 제거
                 pChunckPool = new TLSChunkMemoryPool;
@@ -84,7 +84,7 @@ private:
 
     static void Destroy(void) {
         delete pChunckPool;
-        pChunckPool = NULL;
+        pChunckPool = nullptr;
     }
 
 private:
@@ -100,7 +100,7 @@ private:
 };
 
 template <typename T>
-TLSChunkMemoryPool<T>* TLSChunkMemoryPool<T>::pChunckPool = NULL;
+TLSChunkMemoryPool<T>* TLSChunkMemoryPool<T>::pChunckPool = nullptr;
 
 template <typename T>
 long TLSChunkMemoryPool<T>::KeySingleton = 0;
@@ -118,19 +118,19 @@ public:
     struct stNode {
         PadType PadUnderflow = kPadUnderflow;
         T Data;
-        stNode* Next = NULL;
+        stNode* Next = nullptr;
         PadType PadOverflow = kPadOverflow;
     };
 
     TLSNodeMemoryPool() {
         ChunckPool = TLSChunkMemoryPool<T>::GetInstance();
-        Head = NULL;
+        Head = nullptr;
         FreeNodeCnt = 0;
         ChunckSize = ChunckPool->GetChunkSize();
     }
 
     ~TLSNodeMemoryPool() {
-        while (Head != NULL) {
+        while (Head != nullptr) {
             stNode* Next = Head->Next;
             delete Head;
             Head = Next;
@@ -143,7 +143,7 @@ public:
     T* Alloc() {
         if (FreeNodeCnt == 0) {
             Head = (stNode*)ChunckPool->AllocChunck();
-            if (Head == NULL)
+            if (Head == nullptr)
                 Head = NewNodeList();
             FreeNodeCnt += ChunckSize;
         }
@@ -159,7 +159,7 @@ public:
         stNode* node = (stNode*)((char*)target - sizeof(PadType));
         if (node->PadUnderflow != kPadUnderflow ||
             node->PadOverflow != kPadOverflow) {
-            char* Err_Make = NULL;
+            char* Err_Make = nullptr;
             *Err_Make = 10;
         }
 

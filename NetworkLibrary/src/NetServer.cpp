@@ -54,7 +54,7 @@ unsigned WINAPI NetServer::AcceptThread(LPVOID lpThreadParameter) {
         }
 
         NetServer::Session* session = server->GetFreeSession();
-        if (session == NULL) {
+        if (session == nullptr) {
             closesocket(clientSocket);
             pLogger->Log(L"Accept", Logger::LogLevel::kDebug,
                          L"Not Enough FreeSession, ConnectedSession:%d\n",
@@ -97,10 +97,10 @@ unsigned WINAPI NetServer::WorkerThread(LPVOID lpThreadParameter) {
         GetQueuedCompletionStatus(server->IOCP, &transferred, (PULONG_PTR)&targetSession,
                                   &tmpOverlapped, INFINITE);
 
-        if (transferred == 0 && targetSession == NULL && tmpOverlapped == NULL) {
+        if (transferred == 0 && targetSession == nullptr && tmpOverlapped == nullptr) {
             if (server->Shutdown)
                 break;
-            pLogger->Log(L"Network", Logger::LogLevel::kSystem, L"# GQCS return NULL");
+            pLogger->Log(L"Network", Logger::LogLevel::kSystem, L"# GQCS return nullptr");
             pLogger->Crash();
             break;
         }
@@ -197,20 +197,20 @@ NetServer::NetServer(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncoder(fa
         OwnsEncoder = true;
     }
 
-    IOCP = NULL;
+    IOCP = nullptr;
     ListenSocket = INVALID_SOCKET;
     Shutdown = 0;
 
-    SessionArr = NULL;
+    SessionArr = nullptr;
     TotalSessionCnt = 0;
 
     SessionIDCnt = 0;
 
     AcceptThreadID = 0;
-    AcceptThread_ = NULL;
+    AcceptThread_ = nullptr;
 
-    WorkerThreadID = NULL;
-    WorkerThread_ = NULL;
+    WorkerThreadID = nullptr;
+    WorkerThread_ = nullptr;
     ThreadCnt = 0;
 
     AcceptTotal = 0;
@@ -230,22 +230,22 @@ NetServer::~NetServer() {
             if (WorkerThread_[i])
                 CloseHandle(WorkerThread_[i]);
         delete[] WorkerThread_;
-        WorkerThread_ = NULL;
+        WorkerThread_ = nullptr;
     }
     if (WorkerThreadID) {
         delete[] WorkerThreadID;
-        WorkerThreadID = NULL;
+        WorkerThreadID = nullptr;
     }
 
     if (TotalSessionCnt) {
         delete[] SessionArr;
-        SessionArr = NULL;
+        SessionArr = nullptr;
         TotalSessionCnt = 0;
     }
 
     if (AcceptThread_) {
         CloseHandle(AcceptThread_);
-        AcceptThread_ = NULL;
+        AcceptThread_ = nullptr;
     }
 
     WSACleanup();
@@ -294,14 +294,14 @@ void NetServer::Stop() {
 
     // 4. WorkerThread 종료 — PQCS × ThreadCnt로 GQCS 깨움
     for (int i = 0; i < ThreadCnt; i++)
-        PostQueuedCompletionStatus(IOCP, 0, 0, NULL);
+        PostQueuedCompletionStatus(IOCP, 0, 0, nullptr);
     if (WorkerThread_ && ThreadCnt > 0)
         WaitForMultipleObjects(ThreadCnt, WorkerThread_, TRUE, INFINITE);
 
     // 5. IOCP close
     if (IOCP) {
         CloseHandle(IOCP);
-        IOCP = NULL;
+        IOCP = nullptr;
     }
 }
 
@@ -311,8 +311,8 @@ bool NetServer::Start(const WCHAR* serverIP, u_short serverPort, u_short workerT
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
         return false;
 
-    IOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, workerThreadCnt_Run);
-    if (IOCP == NULL)
+    IOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, workerThreadCnt_Run);
+    if (IOCP == nullptr)
         return false;
 
     ListenSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -341,7 +341,7 @@ bool NetServer::Start(const WCHAR* serverIP, u_short serverPort, u_short workerT
 
     SOCKADDR_IN serveraddr;
     serveraddr.sin_family = AF_INET;
-    if (serverIP == NULL)
+    if (serverIP == nullptr)
         serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     else
         InetPton(AF_INET, serverIP, &serveraddr.sin_addr);
@@ -369,9 +369,9 @@ bool NetServer::Start(const WCHAR* serverIP, u_short serverPort, u_short workerT
         FreeSessionStack.Push(&SessionArr[init_SessionArr]);
     }
 
-    AcceptThread_ = (HANDLE)_beginthreadex(NULL, 0, AcceptThread, (LPVOID)this, 0,
+    AcceptThread_ = (HANDLE)_beginthreadex(nullptr, 0, AcceptThread, (LPVOID)this, 0,
                                            (unsigned int*)&AcceptThreadID);
-    if (AcceptThread_ == NULL)
+    if (AcceptThread_ == nullptr)
         return false;
 
     ThreadCnt = workerThreadCnt_Total;
@@ -379,9 +379,9 @@ bool NetServer::Start(const WCHAR* serverIP, u_short serverPort, u_short workerT
     WorkerThread_ = new HANDLE[ThreadCnt];
 
     for (int i = 0; i < ThreadCnt; i++) {
-        WorkerThread_[i] = (HANDLE)_beginthreadex(NULL, 0, WorkerThread, (LPVOID)this, 0,
+        WorkerThread_[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, (LPVOID)this, 0,
                                                   (unsigned int*)&WorkerThreadID[i]);
-        if (WorkerThread_[i] == NULL)
+        if (WorkerThread_[i] == nullptr)
             return false;
     }
 
@@ -448,7 +448,7 @@ bool NetServer::SendPost(Session* session, DWORD flag) {
     session->SendPacketCnt = wsabufCnt;
 
     int retval_WSASend =
-        WSASend(session->Socket, wsabuf, wsabufCnt, NULL, flag, &session->SendOverlapped, NULL);
+        WSASend(session->Socket, wsabuf, wsabufCnt, nullptr, flag, &session->SendOverlapped, nullptr);
     if (retval_WSASend == SOCKET_ERROR) {
         int Err_Code = WSAGetLastError();
         switch (Err_Code) {
@@ -473,7 +473,7 @@ bool NetServer::SendPost(Session* session, DWORD flag) {
     }
 
     if (session->SessionUseFlag == false)
-        CancelIoEx((HANDLE)session->Socket, NULL);
+        CancelIoEx((HANDLE)session->Socket, nullptr);
     return true;
 }
 
@@ -488,7 +488,7 @@ bool NetServer::RecvPost(Session* session, DWORD flag) {
 
     session->IncrementSessionRef();
     int retval_WSARecv =
-        WSARecv(session->Socket, &wsabuf, 1, NULL, &flag, &session->RecvOverlapped, NULL);
+        WSARecv(session->Socket, &wsabuf, 1, nullptr, &flag, &session->RecvOverlapped, nullptr);
     if (retval_WSARecv == SOCKET_ERROR) {
         int Err_Code = WSAGetLastError();
         switch (Err_Code) {
@@ -513,7 +513,7 @@ bool NetServer::RecvPost(Session* session, DWORD flag) {
         }
     }
     if (session->SessionUseFlag == false)
-        CancelIoEx((HANDLE)session->Socket, NULL);
+        CancelIoEx((HANDLE)session->Socket, nullptr);
     return true;
 }
 
@@ -523,8 +523,8 @@ bool NetServer::RecvPost(Session* session, DWORD flag) {
 NetServer::Session* NetServer::GetFreeSession() {
     Session* session;
     FreeSessionStack.Pop(session);
-    if (session == NULL)
-        return NULL;
+    if (session == nullptr)
+        return nullptr;
 
     InitSession(session);
 
@@ -553,7 +553,7 @@ void NetServer::InitSession(Session* session) {
     session->SessionUseFlag = true;
     session->SessionID |= GenerateSessionID();
 
-    session->LastAction = NULL;
+    session->LastAction = nullptr;
 
     ZeroMemory(&session->SendOverlapped, sizeof(session->SendOverlapped));
     ZeroMemory(&session->RecvOverlapped, sizeof(session->RecvOverlapped));
@@ -573,7 +573,7 @@ void NetServer::KillSession(unsigned __int64 sessionID) {
     session->IncrementSessionRef();
     if (session->ReleaseArr[0] == FALSE && session->SessionID == sessionID) {
         session->SessionUseFlag = false;
-        CancelIoEx((HANDLE)session->Socket, NULL);
+        CancelIoEx((HANDLE)session->Socket, nullptr);
         if (session->DecrementSessionRef() == 0)
             DisconnectSession(session);
     } else
@@ -592,7 +592,7 @@ void NetServer::DisconnectSession(Session* session) {
 Packet* NetServer::AllocPacket(void) {
     TLSNodeMemoryPool<Packet>* packetPool = (TLSNodeMemoryPool<Packet>*)TlsGetValue(
         TLSChunkMemoryPool<Packet>::GetInstance()->GetTLSIndex());
-    if (packetPool == NULL) {
+    if (packetPool == nullptr) {
         packetPool = new TLSNodeMemoryPool<Packet>;
         packetPool->SetTLS();
     }
@@ -607,7 +607,7 @@ void NetServer::FreePacket(Packet* packet) {
         return;
     TLSNodeMemoryPool<Packet>* packetPool = (TLSNodeMemoryPool<Packet>*)TlsGetValue(
         TLSChunkMemoryPool<Packet>::GetInstance()->GetTLSIndex());
-    if (packetPool == NULL) {
+    if (packetPool == nullptr) {
         packetPool = new TLSNodeMemoryPool<Packet>;
         packetPool->SetTLS();
     }
