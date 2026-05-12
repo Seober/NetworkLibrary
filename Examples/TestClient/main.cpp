@@ -12,6 +12,7 @@
 
 #include "NetClient.h"
 #include "Packet.h"
+#include "Logger.h"
 #include "../TestServer/TestProtocol.h"
 
 
@@ -54,8 +55,15 @@ public:
         RecvCnt++;
         WORD type;
         *packet >> type;
-        if (type == kTestEcho)
+        if (type == kTestEcho) {
             VerifiedCnt++;
+        } else {
+            Logger* pLogger = Logger::GetInstance();
+            pLogger->Log(L"TestClient", Logger::LogLevel::kError,
+                         L"PacketType mismatch — got 0x%04x, expected kTestEcho(0x%04x), sessionID:%p",
+                         type, (WORD)kTestEcho, sessionID);
+            pLogger->Crash();
+        }
     }
 
     int N = 0;
