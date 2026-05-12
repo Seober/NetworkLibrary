@@ -60,6 +60,9 @@
     <ClCompile Include="test_packet.cpp" />
     <ClCompile Include="test_xor_encoder.cpp" />
     <ClCompile Include="test_netclient_loopback.cpp" />
+    <ClCompile Include="test_crashdump_counter.cpp" />
+    <ClCompile Include="test_logger_64bit.cpp" />
+    <ClCompile Include="test_packet_type_crash.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NetworkLibrary\NetworkLibrary.vcxproj">

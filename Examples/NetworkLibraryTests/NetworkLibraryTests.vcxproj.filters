@@ -25,5 +25,14 @@
     <ClCompile Include="test_netclient_loopback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_crashdump_counter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_logger_64bit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_packet_type_crash.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
