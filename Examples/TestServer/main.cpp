@@ -2,6 +2,7 @@
 #include <conio.h>
 
 #include "NetServer.h"
+#include "MonitoringTool.h"
 
 
 #define DEFAULT_PORT 12001
@@ -55,6 +56,7 @@ int main(void) {
     DWORD transmitBuffer[4] = {
         0,
     };
+    MonitoringTool monitor;
 
     while (1) {
         if (_kbhit()) {
@@ -64,6 +66,7 @@ int main(void) {
         }
 
         server.GetTransmit(transmitBuffer);
+        monitor.UpdateAll();
 
         wprintf(L"\n====================================[loopCnt:%I64u]================================"
                 L"=====\n",
@@ -79,6 +82,14 @@ int main(void) {
                 server.GetAcceptTPS());
         wprintf(L"[PacketPool]\t> Total:%d\tUse:%d\tFree:%d\n", server.LogGetPacketPoolTotal(),
                 server.LogGetPacketPoolUse(), server.LogGetPacketPoolFree());
+        wprintf(L"[CPU]\t\t> Process:%.1f%% (User:%.1f%% Kernel:%.1f%%)  Processor:%.1f%%\n",
+                monitor.ProcessTotal(), monitor.ProcessUser(), monitor.ProcessKernel(),
+                monitor.ProcessorTotal());
+        wprintf(L"[Memory]\t> Process:%uMB  Available:%dMB\n",
+                monitor.ProcessUserAllocMemory() / 1000000, monitor.AvailableMemory());
+        wprintf(L"[NIC]\t\t> Recv:%dKB Send:%dKB\n",
+                (int)(monitor.NetworkRecvBytes() / 1000),
+                (int)(monitor.NetworkSendBytes() / 1000));
         wprintf(L"===================================================================================="
                 L"\n");
 
