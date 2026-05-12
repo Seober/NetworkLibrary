@@ -553,7 +553,7 @@ void NetServer::InitSession(Session* session) {
     session->SessionUseFlag = true;
     session->SessionID |= GenerateSessionID();
 
-    session->LastAction = nullptr;
+    session->LastAction = 0;
 
     ZeroMemory(&session->SendOverlapped, sizeof(session->SendOverlapped));
     ZeroMemory(&session->RecvOverlapped, sizeof(session->RecvOverlapped));

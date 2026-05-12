@@ -132,7 +132,7 @@ void LockFreeQueue<T>::Enqueue(T data) {
         Next = Tail->Next;
 
         if (OldTail == Tail) {
-            if (Next.Data == nullptr) {
+            if (Next.Data == 0) {
                 if (OldTail.CAS_Next(NewNode.Data, Next.Data)) {
                     Tail.CAS(NewNode.Data, OldTail.Data);
 
@@ -204,7 +204,7 @@ void LockFreeQueue<T>::Clear(void) {
         tmpHead = Head;
         Next = tmpHead->Next;
 
-        if (Next == nullptr)
+        if (Next.Data == 0)
             break;
 
         Head = Next;

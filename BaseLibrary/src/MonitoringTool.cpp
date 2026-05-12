@@ -52,17 +52,17 @@ MonitoringTool::MonitoringTool(HANDLE process) {
     ProcessLastKernel.QuadPart = 0;
     ProcessLastTime.QuadPart = 0;
 
-    PdhOpenQuery(nullptr, nullptr, &QueryPDH);
+    PdhOpenQuery(nullptr, 0, &QueryPDH);
 
     WCHAR strBuf[1024];
     wsprintf(strBuf, L"\\Process(%s)\\Private Bytes", ptr);
-    PdhAddCounter(QueryPDH, strBuf, nullptr, &CounterProcessUserAllocMemory);
+    PdhAddCounter(QueryPDH, strBuf, 0, &CounterProcessUserAllocMemory);
 
     wsprintf(strBuf, L"\\Process(%s)\\Pool Nonpaged Bytes", ptr);
-    PdhAddCounter(QueryPDH, strBuf, nullptr, &CounterProcessNonPagedMemory);
+    PdhAddCounter(QueryPDH, strBuf, 0, &CounterProcessNonPagedMemory);
 
-    PdhAddCounter(QueryPDH, L"\\Memory\\Available MBytes", nullptr, &CounterAvailableMemory);
-    PdhAddCounter(QueryPDH, L"\\Memory\\Pool Nonpaged Bytes", nullptr, &CounterNonPagedMemory);
+    PdhAddCounter(QueryPDH, L"\\Memory\\Available MBytes", 0, &CounterAvailableMemory);
+    PdhAddCounter(QueryPDH, L"\\Memory\\Pool Nonpaged Bytes", 0, &CounterNonPagedMemory);
 
     /*
 	쿼리 추가필요 시 https://docs.microsoft.com/ko-kr/windows/win32/perfctrs/browsing-performance-counters를 통해 쿼리를 얻고 하드코딩
@@ -105,12 +105,12 @@ MonitoringTool::MonitoringTool(HANDLE process) {
         query[0] = L'\0';
         StringCbPrintf(query, sizeof(WCHAR) * 1024,
                        L"\\Network Interface(%s)\\Bytes Received/sec", cur);
-        PdhAddCounter(QueryPDH, query, nullptr,
+        PdhAddCounter(QueryPDH, query, 0,
                       &EthernetStruct[cnt].PDHCounterNetworkRecvBytes);
         query[0] = L'\0';
         StringCbPrintf(query, sizeof(WCHAR) * 1024, L"\\Network Interface(%s)\\Bytes Sent/sec",
                        cur);
-        PdhAddCounter(QueryPDH, query, nullptr,
+        PdhAddCounter(QueryPDH, query, 0,
                       &EthernetStruct[cnt].PDHCounterNetworkSendBytes);
     }
 

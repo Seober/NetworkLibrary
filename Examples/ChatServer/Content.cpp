@@ -61,7 +61,7 @@ unsigned WINAPI ChatServer::HeartbeatTimerThread(LPVOID lpThreadParameter) {
     Job* job;
 
     while (1) {
-        job = server->AllocJob(JobType::kHeartbeat, nullptr, nullptr);
+        job = server->AllocJob(JobType::kHeartbeat, 0, nullptr);
         server->JobQueue.Enqueue(job);
         SetEvent(server->JobEvent);
 
