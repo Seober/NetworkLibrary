@@ -12,9 +12,6 @@
     <Filter Include="Content">
       <UniqueIdentifier>{03AF9A38-D8DF-4499-9CD6-A2AE1DEFBAA2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Monitoring">
-      <UniqueIdentifier>{5054560D-7CBA-48DE-ADB9-B8FECDC172CB}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Content.h">
@@ -23,16 +20,10 @@
     <ClInclude Include="ChatProtocol.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MonitoringTool.h">
-      <Filter>Monitoring</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Content.cpp">
       <Filter>Content</Filter>
-    </ClCompile>
-    <ClCompile Include="MonitoringTool.cpp">
-      <Filter>Monitoring</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>

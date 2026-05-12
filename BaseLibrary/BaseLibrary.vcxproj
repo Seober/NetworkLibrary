@@ -50,11 +50,13 @@
     <ClInclude Include="include\LockFreeStack.h" />
     <ClInclude Include="include\Logger.h" />
     <ClInclude Include="include\LockFreeMemoryPool.h" />
+    <ClInclude Include="include\MonitoringTool.h" />
     <ClInclude Include="include\TLSMemoryPool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CrashDump.cpp" />
     <ClCompile Include="src\Logger.cpp" />
+    <ClCompile Include="src\MonitoringTool.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

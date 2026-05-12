@@ -13,6 +13,9 @@
     <Filter Include="Logging\CrashDump">
       <UniqueIdentifier>{9F27974C-60CD-4F4D-A4C3-72F5919A296C}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Monitoring">
+      <UniqueIdentifier>{DACE17AE-B0EF-479F-87BB-35C121E07FC4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\LockFreeStack.h">
@@ -33,6 +36,9 @@
     <ClInclude Include="include\CrashDump.h">
       <Filter>Logging\CrashDump</Filter>
     </ClInclude>
+    <ClInclude Include="include\MonitoringTool.h">
+      <Filter>Monitoring</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Logger.cpp">
@@ -40,6 +46,9 @@
     </ClCompile>
     <ClCompile Include="src\CrashDump.cpp">
       <Filter>Logging\CrashDump</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MonitoringTool.cpp">
+      <Filter>Monitoring</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
