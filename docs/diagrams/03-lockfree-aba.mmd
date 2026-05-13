@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant A as A 스레드 (Enqueue NewNode_A)
+    participant Q as LockFreeQueue
+    participant B as B 스레드 (Dequeue + 다른 Enqueue)
+
+    Note over Q: Tail = ~4e8 노드 (Queue 마지막 노드)
+
+    A->>Q: OldTail = Tail 읽기 (~4e8)
+    A->>Q: Next = OldTail->Next 읽기 (NULL)
+    Note over A: OldTail == Tail 비교 통과
+
+    B->>Q: Dequeue — Head ~4e8 노드 free
+    Note over Q: ~4e8 메모리 해제
+
+    B->>Q: 새 Enqueue — NodePool에서 ~4e8 재할당
+    Note over Q: 같은 메모리 주소 ~4e8에
+
+    A->>Q: CAS1 시도 — OldTail(~4e8)의 Next를 NewNode_A로 swap
+    Note over A,Q: OldTail 메모리 ~4e8 = 지금은 NewNode_B
+
+    rect rgb(220, 240, 220)
+        Note over Q: 해결: 각 노드에 RefCnt + DeleteFlag 추가
+    end

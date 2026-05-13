@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph Global["TLSChunkMemoryPool (전역 싱글톤)"]
+        CS["ChunckStack<br/>LockFreeStack&lt;void*&gt;"]
+    end
+
+    subgraph T1["Worker Thread 1 (TLS)"]
+        N1["TLSNodeMemoryPool"]
+    end
+
+    subgraph T2["Worker Thread 2 (TLS)"]
+        N2["TLSNodeMemoryPool"]
+    end
+
+    subgraph T3["Worker Thread N (TLS)"]
+        N3["TLSNodeMemoryPool"]
+    end
+
+    N1 <-->|"chunk 단위"| CS
+    N2 <-->|"chunk 단위"| CS
+    N3 <-->|"chunk 단위"| CS

@@ -1,0 +1,15 @@
+flowchart LR
+    Client((Client)) -->|connect| Listen[Listen Socket]
+    Listen --> AT[Accept Thread]
+    AT -->|RecvPost| IOCP[(IOCP<br/>Completion Port)]
+
+    IOCP --> W1[Worker Thread 1]
+    IOCP --> W2[Worker Thread 2]
+    IOCP --> WN[Worker Thread N]
+
+    W1 -->|OnRecv 콜백| App[사용자 핸들러]
+    W2 -->|OnRecv 콜백| App
+    WN -->|OnRecv 콜백| App
+
+    App -->|SendPacket| SQ[Session SendQ<br/>LockFreeQueue]
+    SQ -->|SendPost| IOCP
