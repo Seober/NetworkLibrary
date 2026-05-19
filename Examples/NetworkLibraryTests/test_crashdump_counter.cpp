@@ -9,15 +9,15 @@
 TEST_CASE("CrashDump: DumpCount static increment accumulates", "[crashdump][counter]") {
     CrashDump::DumpCount = 0;
 
-    long a = InterlockedIncrement(&CrashDump::DumpCount);
+    long a = ++CrashDump::DumpCount;
     REQUIRE(a == 1);
     REQUIRE(CrashDump::DumpCount == 1);
 
-    long b = InterlockedIncrement(&CrashDump::DumpCount);
+    long b = ++CrashDump::DumpCount;
     REQUIRE(b == 2);
     REQUIRE(CrashDump::DumpCount == 2);
 
-    long c = InterlockedIncrement(&CrashDump::DumpCount);
+    long c = ++CrashDump::DumpCount;
     REQUIRE(c == 3);
     REQUIRE(CrashDump::DumpCount == 3);
 
@@ -28,11 +28,11 @@ TEST_CASE("CrashDump: shadowing fix preserves member identity", "[crashdump][sha
     CrashDump::DumpCount = 100;
 
     // MyExceptionFilter line 37 패턴 재현 — 멤버에 +1, 지역에 결과 받기
-    long dumpCount = InterlockedIncrement(&CrashDump::DumpCount);
+    long dumpCount = ++CrashDump::DumpCount;
     REQUIRE(dumpCount == 101);
     REQUIRE(CrashDump::DumpCount == 101);
 
-    long dumpCount2 = InterlockedIncrement(&CrashDump::DumpCount);
+    long dumpCount2 = ++CrashDump::DumpCount;
     REQUIRE(dumpCount2 == 102);
     REQUIRE(CrashDump::DumpCount == 102);
 

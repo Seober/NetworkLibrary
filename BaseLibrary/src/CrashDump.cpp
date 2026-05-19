@@ -5,7 +5,7 @@
 #include <crtdbg.h>
 #include <stdio.h>
 
-long CrashDump::DumpCount = 0;
+std::atomic<long> CrashDump::DumpCount{0};
 
 CrashDump::CrashDump() {
     DumpCount = 0;
@@ -34,7 +34,7 @@ void CrashDump::Crash(void) {
 LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPointer) {
     SYSTEMTIME stNowTime;
 
-    long dumpCount = InterlockedIncrement(&DumpCount);
+    long dumpCount = ++DumpCount;
 
     // 현재 프로세스의 메모리 사용량 >> 사용량에 비례해서 덤프파일 사이즈가 나올 것이기 때문에 필요없는 로직
     /*HANDLE hProcess = 0;

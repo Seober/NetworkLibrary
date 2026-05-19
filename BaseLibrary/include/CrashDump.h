@@ -4,6 +4,7 @@
 //#define CRASH_DUMP
 
 #include <windows.h>
+#include <atomic>
 
 class CrashDump {
 public:
@@ -27,7 +28,7 @@ public:
 
     static void myPurecallHandler(void) { Crash(); }
 
-    static long DumpCount;
+    static std::atomic<long> DumpCount;
 };
 
 

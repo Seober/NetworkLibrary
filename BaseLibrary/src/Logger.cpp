@@ -13,7 +13,7 @@ Logger::Logger() {
 
 void Logger::Log(const WCHAR* type, LogLevel level, const WCHAR* stringFormat, ...) {
     if (MinLevel <= level) {
-        LONG64 logCnt = InterlockedIncrement64(&LogCnt);
+        LONG64 logCnt = ++LogCnt;
 
         int retval_FileName;
         int retval_LogTag;

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "CrashDump.h"
+#include <atomic>
 
 class Logger {
 public:
@@ -52,7 +53,7 @@ private:
 
     LogLevel MinLevel;
 
-    LONG64 LogCnt;
+    std::atomic<LONG64> LogCnt;
 
 
     static long KeySingleton;
