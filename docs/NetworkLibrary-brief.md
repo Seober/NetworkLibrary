@@ -107,6 +107,12 @@ LockFreeQueue Enqueue는 2단 CAS를 사용한다.
 
 검증 과정에서 "Queue에 데이터가 분명히 있어야 하는 상황에서 Dequeue가 데이터 없음으로 실패"하는 현상을 만났다. 추적 결과 **클래식 ABA 패턴**이었다. 참조 카운터가 없는 가정에서 시나리오는 다음과 같다.
 
+![A 스레드 CAS1 실패 시점 — Tail Ptr이 ~4e8 노드를 가리킴](../LFQ_TroubleShooting_1.png)
+*그림 1. A 스레드 Enqueue 도중 CAS 실패 직후 tmpHead/tmpTail/tmpNext 메모리 로깅. Tail 하위 비트가 `~4e8`로 일관되게 찍힘.*
+
+![B 스레드가 ~4e8 노드를 재할당 — Tag wrap 시점 충돌](../LFQ_TroubleShooting_2.png)
+*그림 2. B 스레드가 `~4e8` 노드를 Dequeue 후 재할당. 재할당 시점 Tag는 `1eb8`이었으나 A의 실제 Enqueue 성공 시점 Tail Tag는 `1f12` — 16-bit Tag가 wrap된 영역에서 같은 메모리 주소가 다른 의미로 재사용된 정황 포착.*
+
 1. A 스레드 Enqueue: `OldTail = Tail` 읽기(~4e8), `Next = OldTail->Next` 읽기(NULL), `OldTail == Tail` 변화 검증 통과 후 CAS1 시도 직전에 컨텍스트 스위치
 2. B 스레드: Head인 `~4e8` 노드를 Dequeue → 메모리 free
 3. B 스레드: 다른 Enqueue 시 NodePool에서 `~4e8` 메모리를 재할당받음 → 새 의미의 NewNode_B로 초기화(`Next = nullptr`)
