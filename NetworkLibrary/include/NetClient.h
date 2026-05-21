@@ -7,6 +7,8 @@
 #include <windows.h>
 
 #include <atomic>
+#include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 
 #include "Packet.h"
@@ -122,7 +124,7 @@ private:
     TLSChunkMemoryPool<Packet>* PacketPool;
     LockFreeStack<Session*> FreeSessionStack;
 
-    SRWLOCK srwLogTransmitMap;
+    std::shared_mutex srwLogTransmitMap;
     std::unordered_map<DWORD, std::atomic<DWORD>*>
         LogTransmit_Map;  // Value 0 : RecvTPS, Value 1 : RecvBytes, Value 2 : SendTPS, Value 3 : SendBytes
 

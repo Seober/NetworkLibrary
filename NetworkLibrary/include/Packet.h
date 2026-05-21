@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <windows.h>
 
+#include <mutex>
+
 class Packet {
 public:
     static constexpr int kBufferDefault = 1024;
@@ -21,10 +23,10 @@ public:
     char* GetWriteBufferPtr(void) { return &Buffer[Rear]; }
 
     bool IsEncoded(void) { return EncodeFlag; }
-    void LockPacket(void) { AcquireSRWLockExclusive(&SRWEncode); }
+    void LockPacket(void) { SRWEncode.lock(); }
     void UnlockPacket(void) {
         EncodeFlag = true;
-        ReleaseSRWLockExclusive(&SRWEncode);
+        SRWEncode.unlock();
     }
 
 
@@ -97,7 +99,7 @@ private:
     char* Buffer;
 
 private:
-    SRWLOCK SRWEncode;
+    std::mutex SRWEncode;
     bool EncodeFlag;
 };
 

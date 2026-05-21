@@ -142,8 +142,6 @@ NetClient::NetClient(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncoder(fa
     ThreadCnt = 0;
 
     PacketPool = TLSChunkMemoryPool<Packet>::GetInstance();
-
-    InitializeSRWLock(&srwLogTransmitMap);
 }
 
 NetClient::~NetClient() {
@@ -584,9 +582,10 @@ std::atomic<DWORD>* NetClient::GetThreadTransmitArr(void) {
         transmitArr[i].store(0);
     DWORD threadID = GetCurrentThreadId();
 
-    AcquireSRWLockExclusive(&srwLogTransmitMap);
-    LogTransmit_Map.insert(std::make_pair(threadID, transmitArr));
-    ReleaseSRWLockExclusive(&srwLogTransmitMap);
+    {
+        std::lock_guard<std::shared_mutex> lock(srwLogTransmitMap);
+        LogTransmit_Map.insert(std::make_pair(threadID, transmitArr));
+    }
 
     return transmitArr;
 }
@@ -615,10 +614,9 @@ void NetClient::GetTransmit(DWORD* transmitBuffer) {
         transmitBuffer[i] = 0;
 
     // 다른 스레드의 첫 호출(insert) 중 iteration race 방지
-    AcquireSRWLockShared(&srwLogTransmitMap);
+    std::shared_lock<std::shared_mutex> lock(srwLogTransmitMap);
     for (auto& v : LogTransmit_Map) {
         for (int i = 0; i < 4; i++)
             transmitBuffer[i] += v.second[i].exchange(0);
     }
-    ReleaseSRWLockShared(&srwLogTransmitMap);
 }

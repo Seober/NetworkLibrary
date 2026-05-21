@@ -12,7 +12,6 @@ Packet::Packet(int bufferSize) {
 
     Buffer = new char[BufferSize];
 
-    InitializeSRWLock(&SRWEncode);
     EncodeFlag = false;
 }
 
