@@ -7,6 +7,7 @@
 
 #include <windows.h>
 
+#include <atomic>
 #include <unordered_map>
 
 #include "Packet.h"
@@ -30,7 +31,7 @@ public:
         OVERLAPPED SendOverlapped;
         OVERLAPPED RecvOverlapped;
 
-        volatile DWORD SendFlag;
+        std::atomic<DWORD> SendFlag;
         DWORD SendPacketCnt;
 
         LockFreeQueue<Packet*> SendQ;
@@ -98,12 +99,12 @@ public:
     void GetTransmit(DWORD* transmitBuffer);
 
     void AddAcceptCnt(void) {
-        InterlockedExchangeAdd(&AcceptTotal, 1);
-        InterlockedExchangeAdd(&AcceptTPS, 1);
+        AcceptTotal.fetch_add(1);
+        AcceptTPS.fetch_add(1);
     }
 
-    unsigned __int64 GetAcceptTotal(void) { return AcceptTotal; }
-    DWORD GetAcceptTPS(void) { return InterlockedExchange(&AcceptTPS, 0); }
+    unsigned __int64 GetAcceptTotal(void) { return AcceptTotal.load(); }
+    DWORD GetAcceptTPS(void) { return AcceptTPS.exchange(0); }
 
 private:
     void ReleaseSession(Session* session);
@@ -111,14 +112,14 @@ private:
 
     // thread_local 캐시로 LogTransmit_Map 접근 — find/insert race 회피
     // 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
-    DWORD* GetThreadTransmitArr(void);
+    std::atomic<DWORD>* GetThreadTransmitArr(void);
 
 
 private:
     HANDLE IOCP;
     SOCKET ListenSocket;
     unsigned __int64 SessionIDCnt;
-    volatile long Shutdown;   // Stop 트리거 플래그 (InterlockedExchange로 idempotent set)
+    std::atomic<long> Shutdown;   // Stop 트리거 플래그 (exchange로 idempotent set)
 
     Session* SessionArr;
     u_short TotalSessionCnt;
@@ -132,14 +133,14 @@ private:
 
     u_short ThreadCnt;
 
-    alignas(64) unsigned __int64 AcceptTotal;
-    DWORD AcceptTPS;
+    alignas(64) std::atomic<unsigned __int64> AcceptTotal;
+    std::atomic<DWORD> AcceptTPS;
 
     TLSChunkMemoryPool<Packet>* PacketPool;
     LockFreeStack<Session*> FreeSessionStack;
 
     SRWLOCK srwLogTransmitMap;
-    std::unordered_map<DWORD, DWORD*>
+    std::unordered_map<DWORD, std::atomic<DWORD>*>
         LogTransmit_Map;  // Value 0 : RecvTPS, Value 1 : RecvBytes, Value 2 : SendTPS, Value 3 : SendBytes
 
     IPacketEncoder* Encoder;

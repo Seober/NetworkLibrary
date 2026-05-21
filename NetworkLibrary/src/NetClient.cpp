@@ -177,7 +177,7 @@ NetClient::~NetClient() {
 }
 
 void NetClient::Stop() {
-    if (InterlockedExchange(&Shutdown, 1) == 1)
+    if (Shutdown.exchange(1) == 1)
         return;   // idempotent
 
     Logger* pLogger = Logger::GetInstance();
@@ -314,7 +314,7 @@ void NetClient::SendPacket(unsigned __int64 sessionID, Packet* packet) {
 bool NetClient::SendPost(Session* session, DWORD flag) {
     if (session->SessionUseFlag == false)
         return false;
-    if (InterlockedExchange(&session->SendFlag, 1) == 1)
+    if (session->SendFlag.exchange(1) == 1)
         return false;
 
     int packetCnt = session->SendQ.GetUseSize();
@@ -322,7 +322,7 @@ bool NetClient::SendPost(Session* session, DWORD flag) {
         session->SendFlag = 0;
 
         if (session->SendQ.GetUseSize()) {
-            if (InterlockedExchange(&session->SendFlag, 1) == 0) {
+            if (session->SendFlag.exchange(1) == 0) {
                 packetCnt = session->SendQ.GetUseSize();
             } else
                 return false;
@@ -571,14 +571,17 @@ bool NetClient::GetPacketMessage(Packet* packet, Packet* recvQ) {
     return true;
 }
 
-DWORD* NetClient::GetThreadTransmitArr(void) {
+std::atomic<DWORD>* NetClient::GetThreadTransmitArr(void) {
     // static thread_local: 스레드당 1개 캐시, 호출마다 lock 안 걸림
     // 다중 NetClient 인스턴스 사용 시 한계 있음 (1 client 가정)
-    static thread_local DWORD* transmitArr = nullptr;
+    static thread_local std::atomic<DWORD>* transmitArr = nullptr;
     if (transmitArr != nullptr)
         return transmitArr;
 
-    transmitArr = new DWORD[4]();  // value-init: 0으로 초기화
+    // std::atomic value-init은 C++20부터 보장 — C++17 호환 위해 명시 store
+    transmitArr = new std::atomic<DWORD>[4];
+    for (int i = 0; i < 4; i++)
+        transmitArr[i].store(0);
     DWORD threadID = GetCurrentThreadId();
 
     AcquireSRWLockExclusive(&srwLogTransmitMap);
@@ -589,21 +592,21 @@ DWORD* NetClient::GetThreadTransmitArr(void) {
 }
 
 void NetClient::AddRecvBytes(DWORD recvBytes) {
-    DWORD* arr = GetThreadTransmitArr();
+    std::atomic<DWORD>* arr = GetThreadTransmitArr();
     recvBytes += 40 * (recvBytes / 1460 + 1);
-    InterlockedExchangeAdd(&arr[1], recvBytes);
+    arr[1].fetch_add(recvBytes);
 }
 
 void NetClient::AddRecvPacket(void) {
-    DWORD* arr = GetThreadTransmitArr();
-    InterlockedIncrement(&arr[0]);
+    std::atomic<DWORD>* arr = GetThreadTransmitArr();
+    arr[0].fetch_add(1);
 }
 
 void NetClient::AddSend(DWORD sendPacketCnt, DWORD sendBytes) {
-    DWORD* arr = GetThreadTransmitArr();
+    std::atomic<DWORD>* arr = GetThreadTransmitArr();
     sendBytes += 40 * (sendBytes / 1460 + 1);
-    InterlockedExchangeAdd(&arr[2], sendPacketCnt);
-    InterlockedExchangeAdd(&arr[3], sendBytes);
+    arr[2].fetch_add(sendPacketCnt);
+    arr[3].fetch_add(sendBytes);
 }
 
 
@@ -615,7 +618,7 @@ void NetClient::GetTransmit(DWORD* transmitBuffer) {
     AcquireSRWLockShared(&srwLogTransmitMap);
     for (auto& v : LogTransmit_Map) {
         for (int i = 0; i < 4; i++)
-            transmitBuffer[i] += InterlockedExchange(&v.second[i], 0);
+            transmitBuffer[i] += v.second[i].exchange(0);
     }
     ReleaseSRWLockShared(&srwLogTransmitMap);
 }

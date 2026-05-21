@@ -6,6 +6,7 @@
 
 #include <windows.h>
 
+#include <atomic>
 #include <unordered_map>
 
 #include "Packet.h"
@@ -29,7 +30,7 @@ public:
         OVERLAPPED SendOverlapped;
         OVERLAPPED RecvOverlapped;
 
-        volatile DWORD SendFlag;
+        std::atomic<DWORD> SendFlag;
         DWORD SendPacketCnt;
 
         LockFreeQueue<Packet*> SendQ;
@@ -102,13 +103,13 @@ private:
 
     // thread_local 캐시로 LogTransmit_Map 접근 — find/insert race 회피
     // 첫 호출 시에만 lock 잡고 map insert, 이후 호출은 lock 없이 캐시된 array 직접 접근
-    DWORD* GetThreadTransmitArr(void);
+    std::atomic<DWORD>* GetThreadTransmitArr(void);
 
 
 private:
     HANDLE IOCP;
     unsigned __int64 SessionIDCnt;
-    volatile long Shutdown;   // Stop 트리거 플래그 (InterlockedExchange로 idempotent set)
+    std::atomic<long> Shutdown;   // Stop 트리거 플래그 (exchange로 idempotent set)
 
     Session* SessionArr;
     u_short TotalSessionCnt;
@@ -122,7 +123,7 @@ private:
     LockFreeStack<Session*> FreeSessionStack;
 
     SRWLOCK srwLogTransmitMap;
-    std::unordered_map<DWORD, DWORD*>
+    std::unordered_map<DWORD, std::atomic<DWORD>*>
         LogTransmit_Map;  // Value 0 : RecvTPS, Value 1 : RecvBytes, Value 2 : SendTPS, Value 3 : SendBytes
 
     IPacketEncoder* Encoder;
