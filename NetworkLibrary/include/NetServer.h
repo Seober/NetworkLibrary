@@ -10,7 +10,9 @@
 #include <atomic>
 #include <mutex>
 #include <shared_mutex>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include "Packet.h"
 #include "LockFreeQueue.h"
@@ -127,11 +129,9 @@ private:
     u_short TotalSessionCnt;
 
 
-    DWORD AcceptThreadID;
-    HANDLE AcceptThread_;
+    std::thread AcceptThread_;
 
-    DWORD* WorkerThreadID;
-    HANDLE* WorkerThread_;
+    std::vector<std::thread> WorkerThreads;
 
     u_short ThreadCnt;
 

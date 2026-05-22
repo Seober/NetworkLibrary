@@ -9,7 +9,9 @@
 #include <atomic>
 #include <mutex>
 #include <shared_mutex>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include "Packet.h"
 #include "LockFreeQueue.h"
@@ -116,8 +118,7 @@ private:
     Session* SessionArr;
     u_short TotalSessionCnt;
 
-    DWORD* WorkerThreadID;
-    HANDLE* WorkerThread_;
+    std::vector<std::thread> WorkerThreads;
 
     u_short ThreadCnt;
 

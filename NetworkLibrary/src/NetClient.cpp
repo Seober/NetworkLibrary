@@ -137,8 +137,6 @@ NetClient::NetClient(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncoder(fa
 
     SessionIDCnt = 0;
 
-    WorkerThreadID = nullptr;
-    WorkerThread_ = nullptr;
     ThreadCnt = 0;
 
     PacketPool = TLSChunkMemoryPool<Packet>::GetInstance();
@@ -147,19 +145,7 @@ NetClient::NetClient(IPacketEncoder* encoder) : Encoder(encoder), OwnsEncoder(fa
 NetClient::~NetClient() {
     Stop();   // idempotent — 사용자가 명시적 Stop 안 했어도 안전
 
-    // Stop이 thread 종료까지 보장. 여기서 handle/메모리 cleanup
-    if (WorkerThread_) {
-        for (int i = 0; i < ThreadCnt; i++)
-            if (WorkerThread_[i])
-                CloseHandle(WorkerThread_[i]);
-        delete[] WorkerThread_;
-        WorkerThread_ = nullptr;
-    }
-    if (WorkerThreadID) {
-        delete[] WorkerThreadID;
-        WorkerThreadID = nullptr;
-    }
-
+    // Stop이 thread join까지 보장. std::thread/std::vector dtor가 RAII로 자원 정리
     if (TotalSessionCnt) {
         delete[] SessionArr;
         SessionArr = nullptr;
@@ -205,8 +191,9 @@ void NetClient::Stop() {
     // 3. WorkerThread 종료 — PQCS × ThreadCnt로 GQCS 깨움
     for (int i = 0; i < ThreadCnt; i++)
         PostQueuedCompletionStatus(IOCP, 0, 0, nullptr);
-    if (WorkerThread_ && ThreadCnt > 0)
-        WaitForMultipleObjects(ThreadCnt, WorkerThread_, TRUE, INFINITE);
+    for (auto& t : WorkerThreads)
+        if (t.joinable())
+            t.join();
 
     // 4. IOCP close
     if (IOCP) {
@@ -237,15 +224,13 @@ bool NetClient::Start(u_short workerThreadCntTotal, u_short workerThreadCntRun,
         FreeSessionStack.Push(&SessionArr[init_SessionArr]);
     }
 
-    ThreadCnt = workerThreadCntTotal;
-    WorkerThreadID = new DWORD[ThreadCnt];
-    WorkerThread_ = new HANDLE[ThreadCnt];
-
-    for (int i = 0; i < ThreadCnt; i++) {
-        WorkerThread_[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, (LPVOID)this, 0,
-                                                  (unsigned int*)&WorkerThreadID[i]);
-        if (WorkerThread_[i] == nullptr)
-            return false;
+    try {
+        ThreadCnt = workerThreadCntTotal;
+        WorkerThreads.reserve(ThreadCnt);
+        for (int i = 0; i < ThreadCnt; i++)
+            WorkerThreads.emplace_back(WorkerThread, (LPVOID)this);
+    } catch (const std::system_error&) {
+        return false;
     }
 
     return true;
