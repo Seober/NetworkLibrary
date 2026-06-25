@@ -8,8 +8,6 @@ constexpr int kMessageBufsize = 1000;
 WCHAR MessageBuf[kMessageBufsize];
 
 ChatServer::ChatServer(int maxUser, bool heartBeatFlag) {
-    ContentThread = INVALID_HANDLE_VALUE;
-    TimerThread5000 = INVALID_HANDLE_VALUE;
     JobEvent = CreateEvent(nullptr, false, false, nullptr);
 
     MaxUser = maxUser;
@@ -22,11 +20,16 @@ ChatServer::ChatServer(int maxUser, bool heartBeatFlag) {
 
     pLogger = Logger::GetInstance();
 
-    ContentThread =
-        (HANDLE)_beginthreadex(nullptr, 0, UpdateThreadFunc, (LPVOID)this, 0, nullptr);
+    ContentThread = std::thread(UpdateThreadFunc, (LPVOID)this);
     if (heartBeatFlag)
-        TimerThread5000 =
-            (HANDLE)_beginthreadex(nullptr, 0, HeartbeatTimerThread, (LPVOID)this, 0, nullptr);
+        TimerThread5000 = std::thread(HeartbeatTimerThread, (LPVOID)this);
+}
+
+ChatServer::~ChatServer() {
+    if (ContentThread.joinable())
+        ContentThread.detach();
+    if (TimerThread5000.joinable())
+        TimerThread5000.detach();
 }
 
 

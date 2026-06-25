@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include <atomic>
+#include <thread>
 
 #include "NetClient.h"
 #include "Packet.h"
@@ -252,7 +253,7 @@ int wmain(int argc, WCHAR* argv[]) {
     ctx.reconnectMax = reconnectMax;
     ctx.shutdownEvent = shutdownEvent;
 
-    HANDLE senderHandle = (HANDLE)_beginthreadex(nullptr, 0, SenderThread, &ctx, 0, nullptr);
+    std::thread senderThread(SenderThread, &ctx);
 
     wprintf(L"\nPress Q to quit\n\n");
 
@@ -279,10 +280,10 @@ int wmain(int argc, WCHAR* argv[]) {
         Sleep(1000);
     }
 
-    // Sender thread 종료 대기
+    // Sender thread 종료 대기 — shutdownEvent SetEvent 후 sender가 종료될 때까지 join
     SetEvent(shutdownEvent);
-    WaitForSingleObject(senderHandle, 5000);
-    CloseHandle(senderHandle);
+    if (senderThread.joinable())
+        senderThread.join();
     CloseHandle(shutdownEvent);
 
     // client.Stop()은 ~TestClient → ~NetClient 소멸자가 자동 호출

@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <thread>
+#include <vector>
+
 #include "WorkerThread.h"
 #include "ClientSession.h"
 #include "XorPacketEncoder.h"
@@ -125,7 +128,8 @@ int wmain(int argc, WCHAR* argv[]) {
 
     // 워커 컨텍스트 + 스레드 생성
     WorkerContext* ctxArr = (WorkerContext*)calloc(threadCount, sizeof(WorkerContext));
-    HANDLE* threadHandles = (HANDLE*)calloc(threadCount, sizeof(HANDLE));
+    std::vector<std::thread> workerThreads;
+    workerThreads.reserve(threadCount);
 
     int sessionIdx = 0;
     for (int t = 0; t < threadCount; t++) {
@@ -150,7 +154,7 @@ int wmain(int argc, WCHAR* argv[]) {
         ctxArr[t].TotalSent = &totalSent;
         ctxArr[t].TotalRecv = &totalRecv;
 
-        threadHandles[t] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThreadFunc, &ctxArr[t], 0, nullptr);
+        workerThreads.emplace_back(WorkerThreadFunc, &ctxArr[t]);
 
         sessionIdx += thisCount;
     }
@@ -187,14 +191,13 @@ int wmain(int argc, WCHAR* argv[]) {
         }
     }
 
-    // 워커 종료 대기
-    WaitForMultipleObjects(threadCount, threadHandles, TRUE, 5000);
+    // 워커 종료 대기 — shutdownEvent SetEvent 후 모든 worker가 종료될 때까지 join
+    for (auto& t : workerThreads)
+        if (t.joinable())
+            t.join();
 
-    for (int t = 0; t < threadCount; t++)
-        CloseHandle(threadHandles[t]);
     CloseHandle(shutdownEvent);
 
-    free(threadHandles);
     free(ctxArr);
     free(sessions);
 

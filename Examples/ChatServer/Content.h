@@ -4,6 +4,7 @@
 
 #include <list>
 #include <map>
+#include <thread>
 
 class ChatServer : public NetServer {
 public:
@@ -36,7 +37,7 @@ public:
 
 public:
     ChatServer(int maxUser = 5000, bool heartBeatFlag = false);
-    ~ChatServer() {}
+    ~ChatServer();
 
 
     bool OnConnectionRequest();
@@ -79,8 +80,8 @@ private:
     inline void FreeJob(Job* job);
 
 private:
-    HANDLE ContentThread;
-    HANDLE TimerThread5000;
+    std::thread ContentThread;
+    std::thread TimerThread5000;
     HANDLE JobEvent;
 
     unsigned int MaxUser;
