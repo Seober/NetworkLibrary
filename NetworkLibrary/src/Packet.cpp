@@ -10,13 +10,11 @@ Packet::Packet(int bufferSize) {
     Rear = 0;
 
 
-    Buffer = new char[BufferSize];
+    Buffer.reset(new char[BufferSize]);
 
     EncodeFlag = false;
 }
 
-Packet::~Packet(void) {
-    delete Buffer;
-}
+Packet::~Packet(void) {}
 
 void Packet::Release(void) {}

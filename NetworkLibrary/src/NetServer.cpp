@@ -219,8 +219,7 @@ NetServer::~NetServer() {
 
     // Stop이 thread join까지 보장. std::thread/std::vector dtor가 RAII로 자원 정리
     if (TotalSessionCnt) {
-        delete[] SessionArr;
-        SessionArr = nullptr;
+        SessionArr.reset();
         TotalSessionCnt = 0;
     }
 
@@ -337,7 +336,7 @@ bool NetServer::Start(const WCHAR* serverIP, u_short serverPort, u_short workerT
     //////////////////////////////////////////
 
     TotalSessionCnt = connectSession_Max;
-    SessionArr = new Session[TotalSessionCnt];
+    SessionArr.reset(new Session[TotalSessionCnt]);
     for (u_short init_SessionArr = 0; init_SessionArr < TotalSessionCnt; init_SessionArr++) {
         SessionArr[init_SessionArr].ReleaseArr[0] = TRUE;
         SessionArr[init_SessionArr].ReleaseArr[1] = 0;

@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <windows.h>
 
+#include <memory>
 #include <mutex>
 
 class Packet {
@@ -76,7 +77,7 @@ public:
 
     inline void ShiftDataToFront(void) {
         int DataSize = GetDataSize();
-        memcpy(Buffer, &Buffer[Front], DataSize);
+        memcpy(Buffer.get(), &Buffer[Front], DataSize);
         Front = 0;
         Rear = DataSize;
     }
@@ -96,7 +97,7 @@ private:
     int Rear;
 
 private:
-    char* Buffer;
+    std::unique_ptr<char[]> Buffer;
 
 private:
     std::mutex SRWEncode;

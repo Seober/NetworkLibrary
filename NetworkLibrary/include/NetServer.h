@@ -8,6 +8,7 @@
 #include <windows.h>
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
@@ -24,6 +25,10 @@ class NetServer {
 public:
     struct Session {
         bool SessionUseFlag;
+        // [0]=ReleaseFlag(FALSE=활성/TRUE=해제), [1]=RefCnt. alignas(16)+CompareExchange128로
+        // 16-byte 동시 atomic 검증 (DisconnectSession 중복 차단, C-1·C-4 검토 완료).
+        // 3d-2c: MSVC 16-byte std::atomic은 lock-free 미보장(핫패스 위험) → Interlocked 최적,
+        // raw 유지. Linux 포팅(Phase 4) 시 추상화 재정리.
         alignas(16) volatile LONG64 ReleaseArr[2];
         unsigned __int64 SessionID;
 
@@ -125,7 +130,7 @@ private:
     unsigned __int64 SessionIDCnt;
     std::atomic<long> Shutdown;   // Stop 트리거 플래그 (exchange로 idempotent set)
 
-    Session* SessionArr;
+    std::unique_ptr<Session[]> SessionArr;
     u_short TotalSessionCnt;
 
 

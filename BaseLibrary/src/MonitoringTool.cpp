@@ -1,6 +1,8 @@
 ﻿#include <windows.h>
 #include <strsafe.h>
 
+#include <memory>
+
 #include "MonitoringTool.h"
 
 MonitoringTool::MonitoringTool(HANDLE process) {
@@ -72,31 +74,29 @@ MonitoringTool::MonitoringTool(HANDLE process) {
     //네트워크 트래픽
     int cnt = 0;
     bool err = false;
-    WCHAR* cur = nullptr;
-    WCHAR* counters = nullptr;
-    WCHAR* interfaces = nullptr;
+    WCHAR* cur = nullptr;   // interfaces 내부를 훑는 비소유 반복자
+    std::unique_ptr<WCHAR[]> counters;
+    std::unique_ptr<WCHAR[]> interfaces;
     DWORD counterSize = 0, interfaceSize = 0;
     WCHAR query[1024] = {
         0,
     };
 
     // 먼저 버퍼길이를 얻기 위해 Out BUffer 파라미터를 nullptr를 넣어 사이즈만 확인
-    PdhEnumObjectItems(nullptr, nullptr, L"Network Interface", counters, &counterSize, interfaces,
-                       &interfaceSize, PERF_DETAIL_WIZARD, 0);
-    counters = new WCHAR[counterSize];
-    interfaces = new WCHAR[interfaceSize];
+    PdhEnumObjectItems(nullptr, nullptr, L"Network Interface", counters.get(), &counterSize,
+                       interfaces.get(), &interfaceSize, PERF_DETAIL_WIZARD, 0);
+    counters.reset(new WCHAR[counterSize]);
+    interfaces.reset(new WCHAR[interfaceSize]);
 
-    if (PdhEnumObjectItems(nullptr, nullptr, L"Network Interface", counters, &counterSize,
-                           interfaces, &interfaceSize, PERF_DETAIL_WIZARD,
+    if (PdhEnumObjectItems(nullptr, nullptr, L"Network Interface", counters.get(), &counterSize,
+                           interfaces.get(), &interfaceSize, PERF_DETAIL_WIZARD,
                            0) != ERROR_SUCCESS) {
-        delete[] counters;
-        delete[] interfaces;
         return;
     }
 
 
     cnt = 0;
-    cur = interfaces;
+    cur = interfaces.get();
 
     for (; *cur != L'\0' && cnt < kPdhEthernetMax; cur += wcslen(cur) + 1, cnt++) {
         EthernetStruct[cnt].Use = true;

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include <atomic>
+#include <memory>
 #include <thread>
 
 #include "NetClient.h"
@@ -68,7 +69,7 @@ public:
     }
 
     int N = 0;
-    ClientState* States = nullptr;
+    std::unique_ptr<ClientState[]> States;
     std::atomic<int> ConnectCnt{0};
     std::atomic<int> DisconnectCnt{0};
     std::atomic<int> RecvCnt{0};
@@ -215,7 +216,7 @@ int wmain(int argc, WCHAR* argv[]) {
     }
 
     client.N = N;
-    client.States = new TestClient::ClientState[N];
+    client.States.reset(new TestClient::ClientState[N]);
     DWORD startTick = GetTickCount();
     for (int i = 0; i < N; i++) {
         client.States[i].nextSendTime = startTick;
@@ -287,8 +288,7 @@ int wmain(int argc, WCHAR* argv[]) {
     CloseHandle(shutdownEvent);
 
     // client.Stop()은 ~TestClient → ~NetClient 소멸자가 자동 호출
-    delete[] client.States;
-    client.States = nullptr;
+    // States는 unique_ptr — ~TestClient 시점에 자동 해제
 
     return 0;
 }

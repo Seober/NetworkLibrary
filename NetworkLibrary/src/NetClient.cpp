@@ -147,8 +147,7 @@ NetClient::~NetClient() {
 
     // Stop이 thread join까지 보장. std::thread/std::vector dtor가 RAII로 자원 정리
     if (TotalSessionCnt) {
-        delete[] SessionArr;
-        SessionArr = nullptr;
+        SessionArr.reset();
         TotalSessionCnt = 0;
     }
 
@@ -215,7 +214,7 @@ bool NetClient::Start(u_short workerThreadCntTotal, u_short workerThreadCntRun,
     //////////////////////////////////////////
 
     TotalSessionCnt = maxSessionCnt;
-    SessionArr = new Session[TotalSessionCnt];
+    SessionArr.reset(new Session[TotalSessionCnt]);
     for (u_short init_SessionArr = 0; init_SessionArr < TotalSessionCnt; init_SessionArr++) {
         SessionArr[init_SessionArr].ReleaseArr[0] = TRUE;
         SessionArr[init_SessionArr].ReleaseArr[1] = 0;
