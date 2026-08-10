@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Benchmark 결과 CSV (측정 산출물)
+Benchmark/

@@ -65,6 +65,7 @@
     <ClCompile Include="test_logger_64bit.cpp" />
     <ClCompile Include="test_packet_type_crash.cpp" />
     <ClCompile Include="test_config.cpp" />
+    <ClCompile Include="test_statistics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NetworkLibrary\NetworkLibrary.vcxproj">

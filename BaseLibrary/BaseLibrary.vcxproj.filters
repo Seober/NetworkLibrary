@@ -45,6 +45,9 @@
     <ClInclude Include="include\Config.h">
       <Filter>Config</Filter>
     </ClInclude>
+    <ClInclude Include="include\Statistics.h">
+      <Filter>Config</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Logger.cpp">

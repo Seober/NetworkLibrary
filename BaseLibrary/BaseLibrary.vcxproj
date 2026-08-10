@@ -53,6 +53,7 @@
     <ClInclude Include="include\Logger.h" />
     <ClInclude Include="include\LockFreeMemoryPool.h" />
     <ClInclude Include="include\MonitoringTool.h" />
+    <ClInclude Include="include\Statistics.h" />
     <ClInclude Include="include\TLSMemoryPool.h" />
   </ItemGroup>
   <ItemGroup>
