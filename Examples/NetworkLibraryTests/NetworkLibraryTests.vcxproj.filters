@@ -34,5 +34,8 @@
     <ClCompile Include="test_packet_type_crash.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test_config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
