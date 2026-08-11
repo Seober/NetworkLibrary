@@ -17,6 +17,10 @@ namespace {
 // PacketType 검증 안 함, 받은 payload 그대로 송신.
 class EchoServer : public NetServer {
 public:
+    // 파생 소멸자에서 Stop() — vtable이 아직 EchoServer일 때 호출해야
+    // OnClientLeave 콜백이 디스패치된다 (NetServer.h Stop() 주석 참고).
+    ~EchoServer() { Stop(); }
+
     bool OnConnectionRequest() override { return true; }
     void OnClientJoin(unsigned __int64 sessionID) override {}
     void OnClientLeave(unsigned __int64 sessionID) override {}

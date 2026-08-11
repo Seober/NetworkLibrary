@@ -60,7 +60,12 @@ public:
 
     // 정상 종료 — 모든 active session에 OnDisconnect 콜백 보장 후 thread 종료.
     // idempotent (다중 호출 안전), 동기 (return 시 모든 thread 종료 완료).
-    // 소멸자에서 자동 호출됨 — 사용자가 명시적 호출 안 해도 안전.
+    //
+    // [중요] 파생 클래스는 자신의 소멸자에서 Stop()을 호출해야 한다.
+    //   ~NetClient 본체가 실행될 시점에는 vtable이 NetClient로 되돌아가 있어
+    //   OnDisconnect(순수 가상) 디스패치가 불가능하다 (purecall -> Crash).
+    //   ~NetClient의 Stop() 호출은 thread·자원 정리를 위한 안전망일 뿐,
+    //   그 시점에 살아있는 session이 있으면 콜백을 보장할 수 없다.
     void Stop();
 
     // 동기 Connect — 성공 시 sessionID 반환, 실패 시 0

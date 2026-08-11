@@ -20,6 +20,10 @@ constexpr WCHAR kTestIP[] = L"127.0.0.1";
 
 class EchoServer : public NetServer {
 public:
+    // 파생 소멸자에서 Stop() — vtable이 아직 EchoServer일 때 호출해야
+    // OnClientLeave 콜백이 디스패치된다 (NetServer.h Stop() 주석 참고).
+    ~EchoServer() { Stop(); }
+
     bool OnConnectionRequest() override { return true; }
 
     void OnClientJoin(unsigned __int64 sessionID) override {
@@ -48,6 +52,9 @@ class LoopbackClient : public NetClient {
 public:
     static constexpr int kTestValue = 0x12345678;
 
+    // 파생 소멸자에서 Stop() — 위 EchoServer와 동일한 이유
+    ~LoopbackClient() { Stop(); }
+
     void OnConnect(unsigned __int64 sessionID) override {
         ConnectCnt++;
     }
@@ -73,13 +80,11 @@ public:
 }  // namespace
 
 TEST_CASE("NetClient: loopback echo + disconnect", "[netclient][loopback]") {
-    // stack alloc — Phase 3c-8b NetServer/NetClient Stop 메서드 도입 후 안전.
-    // TEST_CASE 끝나면 destructor가 자동 Stop() 호출:
-    //   ~LoopbackClient → ~NetClient → Stop() → 모든 session OnDisconnect 콜백 +
-    //                                            worker thread 종료
-    //   ~EchoServer → ~NetServer → Stop() → 모든 session OnClientLeave 콜백 +
-    //                                       AcceptThread + worker thread 종료
-    // Stop이 thread 종료까지 보장 → ~NetServer/~NetClient 본체 실행 중 virtual 콜백 호출 안 됨 → safe.
+    // stack alloc — TEST_CASE 끝나면 파생 소멸자(~LoopbackClient / ~EchoServer)가
+    // Stop()을 호출해 session 정리 + thread 종료까지 마친다.
+    // 파생 소멸자에서 불러야 하는 이유: ~NetClient / ~NetServer 본체 시점에는
+    // vtable이 기반 클래스로 되돌아가 OnDisconnect / OnClientLeave(순수 가상)
+    // 디스패치가 불가능하다 (purecall -> Crash).
     EchoServer server;
     REQUIRE(server.Start(kTestIP, kTestPort, 2, 0, FALSE, 4));
 

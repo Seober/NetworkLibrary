@@ -39,6 +39,11 @@ public:
         DWORD reconnectAt = 0;
     };
 
+    // 파생 소멸자에서 Stop() — vtable이 아직 TestClient일 때 호출해야
+    // OnDisconnect 콜백이 디스패치된다 (NetClient.h Stop() 주석 참고).
+    // 이 시점에는 States 등 파생 멤버도 아직 살아있다 (멤버 소멸은 본체 이후).
+    ~TestClient() { Stop(); }
+
     void OnConnect(unsigned __int64 sessionID) override {
         ConnectCnt++;
     }
