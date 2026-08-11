@@ -247,7 +247,9 @@ int main(int argc, char* argv[]) {
         sample.PoolFree = server.LogGetPacketPoolFree();
         sample.CpuProcess = monitor.ProcessTotal();
         sample.CpuProcessor = monitor.ProcessorTotal();
-        sample.MemProcessMB = (double)(monitor.ProcessUserAllocMemory() / 1000000);
+        // 소수점 유지 — 정수 MB로 자르면 짧은 구간에서 반올림 오차가
+        // Mem_slopeMBperHour 로 증폭된다 (1MB 차이가 5분 구간에서 12MB/h로 보임)
+        sample.MemProcessMB = monitor.ProcessUserAllocMemory() / 1000000.0;
         samples.push_back(sample);
 
         if (sample.Connected > 0) {
@@ -259,7 +261,7 @@ int main(int argc, char* argv[]) {
         }
 
         printf("[%5d s] Conn:%5d  RecvTPS:%7.0f  SendTPS:%7.0f  Pool[T:%d U:%d F:%d]  "
-               "CPU:%.1f%%/%.1f%%  Mem:%.0fMB\n",
+               "CPU:%.1f%%/%.1f%%  Mem:%.1fMB\n",
                sample.ElapsedSec, sample.Connected, sample.RecvTPS, sample.SendTPS,
                sample.PoolTotal, sample.PoolUse, sample.PoolFree, sample.CpuProcess,
                sample.CpuProcessor, sample.MemProcessMB);
@@ -344,7 +346,7 @@ int main(int argc, char* argv[]) {
                 u8"AcceptTPS(접속TPS),PoolTotal(풀전체),PoolUse(풀사용),PoolFree(풀여유),"
                 u8"CpuProcess(프로세스CPU),CpuProcessor(전체CPU),MemProcessMB(메모리MB)");
         for (const Sample& sample : samples) {
-            fprintf(sampleFile, "%s,%d,%d,%d,%.0f,%.0f,%.0f,%.0f,%.0f,%d,%d,%d,%.1f,%.1f,%.0f\n",
+            fprintf(sampleFile, "%s,%d,%d,%d,%.0f,%.0f,%.0f,%.0f,%.0f,%d,%d,%d,%.1f,%.1f,%.1f\n",
                     sample.Timestamp.c_str(), sample.ElapsedSec, sample.Connected,
                     sample.FreeSession, sample.RecvTPS, sample.RecvBytes, sample.SendTPS,
                     sample.SendBytes, sample.AcceptTPS, sample.PoolTotal, sample.PoolUse,
@@ -369,7 +371,8 @@ int main(int argc, char* argv[]) {
             fwrite("\xEF\xBB\xBF", 1, 3, summaryFile);
             fprintf(summaryFile, "%s\n",
                     u8"Label(런이름),StartTime(시작시각),Valid(유효),"
-                    u8"CfgClientCount(접속수),CfgSendInterval(송신간격ms),CfgMode(모드),CfgNagle,"
+                    u8"CfgClientCount(접속수),CfgSendIntervalMinMs(송신간격최소),"
+                    u8"CfgSendIntervalMaxMs(송신간격최대),CfgMode(모드),CfgNagle,"
                     u8"CfgWorkerThreadCnt(워커수),"
                     u8"WindowStartSec(구간시작),WindowEndSec(구간끝),WindowSamples(샘플수),"
                     u8"RecvTPS_avg(평균),RecvTPS_p50(중앙값),RecvTPS_p95,RecvTPS_p99,"
@@ -381,10 +384,10 @@ int main(int argc, char* argv[]) {
                     u8"DefaultedKeys(기본값사용키)");
         }
         fprintf(summaryFile,
-                "%s,%s,%s,%d,%d-%d,%d,%s,%d,%d,%d,%d,"
+                "%s,%s,%s,%d,%d,%d,%d,%s,%d,%d,%d,%d,"
                 "%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,"
                 "%.0f,%.0f,%.0f,%.0f,"
-                "%.0f,%.0f,%.0f,%.2f,"
+                "%.1f,%.1f,%.1f,%.2f,"
                 "%.1f,%.1f,%.1f,%d,%s\n",
                 label.c_str(), FormatTime(startTime).c_str(), validity.c_str(), clientCount,
                 sendIntervalMin, sendIntervalMax, mode, nagleEnabled ? "true" : "false",
@@ -408,7 +411,7 @@ int main(int argc, char* argv[]) {
     printf("RecvTPS      : avg %.0f / p50 %.0f / p95 %.0f / p99 %.0f\n",
            Statistics::Average(recvTPS), Statistics::Percentile(recvTPS, 0.50),
            Statistics::Percentile(recvTPS, 0.95), Statistics::Percentile(recvTPS, 0.99));
-    printf("Memory       : %.0f -> %.0f MB (%.2f MB/hour)\n", memStart, memEnd, memSlope);
+    printf("Memory       : %.1f -> %.1f MB (%.2f MB/hour)\n", memStart, memEnd, memSlope);
 
     // server.Stop()은 ~EchoServer -> ~NetServer 소멸자가 자동 호출. 명시 호출 불필요.
     return 0;
