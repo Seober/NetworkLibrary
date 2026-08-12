@@ -4,6 +4,7 @@
 #include <dbghelp.h>
 #include <crtdbg.h>
 #include <stdio.h>
+#include <wchar.h>
 
 std::atomic<long> CrashDump::DumpCount{0};
 
@@ -48,15 +49,30 @@ LONG WINAPI CrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS exceptionPoint
 	if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) iWorkingMemory = (int)(pmc.WorkingSetSize / 1024 / 1024);
 	CloseHandle(hProcess);*/
 
+    // 덤프는 실행 파일 경로에 생성한다.
+    // 상대 경로로 쓰면 현재 작업 디렉터리에 떨어지는데, VS 실행 시 작업 디렉터리가
+    // $(ProjectDir)이라 exe 폴더에서 덤프를 찾을 수 없다 (무인 실행에서 특히 문제).
+    // 예외 필터 안이므로 힙 할당 없이 스택 버퍼만 사용.
+    WCHAR exeDir[MAX_PATH] = {
+        0,
+    };
+    GetModuleFileNameW(nullptr, exeDir, MAX_PATH);
+    WCHAR* lastSeparator = wcsrchr(exeDir, L'\\');
+    if (lastSeparator != nullptr)
+        *(lastSeparator + 1) = L'\0';   // 파일명 제거, 디렉터리만 남김
+    else
+        exeDir[0] = L'\0';   // 실패 시 상대 경로로 폴백
+
     // 날짜와 시간
-    WCHAR filename[MAX_PATH];
+    WCHAR filename[MAX_PATH * 2];
 
     GetLocalTime(&stNowTime);
-    wsprintf(filename, L"Dump_%d%02d%02d_%02d.%02d.%02d_%d.dmp", stNowTime.wYear, stNowTime.wMonth,
-             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond, dumpCount);
+    wsprintf(filename, L"%sDump_%d%02d%02d_%02d.%02d.%02d_%d.dmp", exeDir, stNowTime.wYear,
+             stNowTime.wMonth, stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute,
+             stNowTime.wSecond, dumpCount);
     wprintf(L"\n\n\n!!! Crash Error !!! %d.%d.%d / %d:%d:%d\n", stNowTime.wYear, stNowTime.wMonth,
             stNowTime.wDay, stNowTime.wHour, stNowTime.wMinute, stNowTime.wSecond);
-    wprintf(L"Now Save Dump File...\n");
+    wprintf(L"Now Save Dump File... %s\n", filename);
 
     HANDLE dumpFile = ::CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS,
                                    FILE_ATTRIBUTE_NORMAL, nullptr);

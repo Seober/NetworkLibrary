@@ -541,8 +541,8 @@ int wmain(int argc, WCHAR* argv[]) {
                     u8"CfgSendIntervalMaxMs(송신간격최대),CfgMode(모드),CfgNagle,"
                     u8"CfgWorkerThreadCnt(워커수),"
                     u8"WindowStartSec(구간시작),WindowEndSec(구간끝),WindowSamples(샘플수),"
-                    u8"RecvTPS_avg(평균),RecvTPS_p50(중앙값),RecvTPS_p95,RecvTPS_p99,"
-                    u8"RecvTPS_min,RecvTPS_max,SendTPS_avg,"
+                    u8"RecvTPS_avg(평균),RecvTPS_p5(하위5%),RecvTPS_p50(중앙값),"
+                    u8"RecvTPS_p95(상위5%경계),RecvTPS_min,RecvTPS_max,SendTPS_avg,"
                     u8"Connected_min(최소접속),Connected_avg(평균접속),"
                     u8"ConnectTotal(누적접속),DisconnectTotal(누적끊김),VerifiedTotal(검증완료),"
                     u8"Pool_end(종료시풀),Pool_max(최대풀),"
@@ -560,8 +560,8 @@ int wmain(int argc, WCHAR* argv[]) {
                 label.c_str(), FormatTime(startTime).c_str(), validity.c_str(), clientCount,
                 sendIntervalMin, sendIntervalMax, mode, nagleEnabled ? "true" : "false",
                 resolvedWorkerCnt, windowStartSec, windowEndSec, (int)window.size(),
-                Statistics::Average(recvTPS), Statistics::Percentile(recvTPS, 0.50),
-                Statistics::Percentile(recvTPS, 0.95), Statistics::Percentile(recvTPS, 0.99),
+                Statistics::Average(recvTPS), Statistics::Percentile(recvTPS, 0.05),
+                Statistics::Percentile(recvTPS, 0.50), Statistics::Percentile(recvTPS, 0.95),
                 Statistics::MinValue(recvTPS), Statistics::MaxValue(recvTPS),
                 Statistics::Average(sendTPS), Statistics::MinValue(connectedCnt),
                 Statistics::Average(connectedCnt), client.ConnectCnt.load(),
@@ -578,9 +578,9 @@ int wmain(int argc, WCHAR* argv[]) {
     printf("\n=== Result [%s] ===\n", validity.c_str());
     printf("Window       : %d ~ %d sec (%d samples)\n", windowStartSec, windowEndSec,
            (int)window.size());
-    printf("RecvTPS      : avg %.0f / p50 %.0f / p95 %.0f / p99 %.0f\n",
-           Statistics::Average(recvTPS), Statistics::Percentile(recvTPS, 0.50),
-           Statistics::Percentile(recvTPS, 0.95), Statistics::Percentile(recvTPS, 0.99));
+    printf("RecvTPS      : avg %.0f / p5 %.0f / p50 %.0f / p95 %.0f\n",
+           Statistics::Average(recvTPS), Statistics::Percentile(recvTPS, 0.05),
+           Statistics::Percentile(recvTPS, 0.50), Statistics::Percentile(recvTPS, 0.95));
     printf("Verified     : %d (recv %d)\n", client.VerifiedCnt.load(), client.RecvCnt.load());
     printf("Memory       : %.1f -> %.1f MB (%.2f MB/hour)\n", memStart, memEnd, memSlope);
 
