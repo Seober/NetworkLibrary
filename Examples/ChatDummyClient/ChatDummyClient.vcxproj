@@ -54,6 +54,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ws2_32.lib;winmm.lib;DbgHelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D "$(SolutionDir)Examples\ChatConfig.ini" "$(OutDir)"</Command>
+      <Message>Copy ChatConfig.ini to output directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ClientSession.h" />

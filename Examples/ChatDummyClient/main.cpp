@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -16,59 +17,127 @@
 #include "ClientSession.h"
 #include "XorPacketEncoder.h"
 
-#define DEFAULT_IP "127.0.0.1"
-#define DEFAULT_PORT 12001
-#define IDEAL_PER_THREAD 256
+#include "Config.h"
+
+namespace {
+
+std::string GetExeDirectory(void) {
+    char path[MAX_PATH] = {
+        0,
+    };
+    GetModuleFileNameA(nullptr, path, MAX_PATH);
+
+    std::string full(path);
+    std::size_t pos = full.find_last_of("\\/");
+    if (pos == std::string::npos)
+        return std::string();
+    return full.substr(0, pos + 1);
+}
+
+std::string WideToNarrow(const WCHAR* text) {
+    char buffer[MAX_PATH] = {
+        0,
+    };
+    WideCharToMultiByte(CP_ACP, 0, text, -1, buffer, MAX_PATH, nullptr, nullptr);
+    return std::string(buffer);
+}
+
+}   // namespace
 
 int wmain(int argc, WCHAR* argv[]) {
-    // IP/Port는 args (기본값 fallback), N·MessageInterval은 콘솔 입력
-    char serverIp[64] = DEFAULT_IP;
-    int serverPort = DEFAULT_PORT;
-    int N = 0;
-    int messageInterval = 0;
+    // 설정 - 실행 파일 옆 ChatConfig.ini (argv[1] 로 경로 지정 가능)
+    std::string exeDir = GetExeDirectory();
+    std::string configPath = (argc >= 2) ? WideToNarrow(argv[1]) : exeDir + "ChatConfig.ini";
 
-    if (argc >= 2)
-        WideCharToMultiByte(CP_ACP, 0, argv[1], -1, serverIp, sizeof(serverIp), nullptr, nullptr);
-    if (argc >= 3)
-        serverPort = _wtoi(argv[2]);
-
-    if (serverPort <= 0) {
-        wprintf(L"Usage: DummyClient.exe [IP] [Port]\n");
-        wprintf(L"Default: %hs %d\n", DEFAULT_IP, DEFAULT_PORT);
+    Config config;
+    if (!config.Load(configPath.c_str())) {
+        wprintf(L"[Config] load failed: %hs\n", config.GetLastError());
+        wprintf(L"[Config] path: %hs\n", configPath.c_str());
         return 1;
     }
 
-    wprintf(L"=== DummyClient v1 ===\n");
-    wprintf(L"Server: %hs:%d\n\n", serverIp, serverPort);
+    // --- 설정 읽기 ---------------------------------------------------------
+    // ChatServer 와 같은 ini 를 공유하므로 [Server] 키도 모두 읽는다.
+    // 읽지 않은 키는 오타로 간주되어 GetUnusedKeys 에 걸린다.
+    std::string listenIP = config.GetStringRequired("Server", "ListenIP");
+    int serverListenPort = config.GetIntRequired("Server", "Port");
+    int maxUser = config.GetIntRequired("Server", "MaxUser");
+    int serverWorkerThreadCnt = config.GetIntRequired("Server", "WorkerThreadCnt");
+    bool nagleEnabled = config.GetBoolRequired("Server", "NagleEnabled");
 
-    wprintf(L"Input Client Count : ");
-    wscanf_s(L"%d", &N);
-    wprintf(L"Input Message Interval (ms) : ");
-    wscanf_s(L"%d", &messageInterval);
+    std::string serverIP = config.GetStringRequired("Client", "ServerIP");
+    int serverPort = config.GetIntRequired("Client", "ServerPort");
+    int N = config.GetIntRequired("Client", "ClientCount");
+    int messageInterval = config.GetIntRequired("Client", "MessageInterval");
+    int lifetimeMin = config.GetIntRequired("Client", "LifetimeMin");
+    int lifetimeMax = config.GetIntRequired("Client", "LifetimeMax");
+    int sessionPerThread = config.GetIntRequired("Client", "SessionPerThread");
 
-    if (N <= 0 || messageInterval <= 0) {
-        wprintf(L"Invalid input — Client Count and Message Interval must be positive\n");
+    if (config.HasError()) {
+        wprintf(L"[Config] %hs\n", config.GetLastError());
+        return 1;
+    }
+    std::string unused = config.GetUnusedKeys();
+    if (!unused.empty()) {
+        wprintf(L"[Config] unknown key(s) - check for typo: %hs\n", unused.c_str());
         return 1;
     }
 
-    DWORD minLifetime = 0, maxLifetime = 0;
-    wprintf(L"Input Disconnect Min Lifetime (ms, 0=disable) : ");
-    wscanf_s(L"%u", &minLifetime);
-    if (minLifetime > 0) {
-        wprintf(L"Input Disconnect Max Lifetime (ms) : ");
-        wscanf_s(L"%u", &maxLifetime);
-        if (maxLifetime <= minLifetime) {
-            wprintf(L"Invalid — Max must be greater than Min\n");
-            return 1;
-        }
+    // --- 값 검증 -----------------------------------------------------------
+    if (serverListenPort <= 0 || serverListenPort > 65535 || serverPort <= 0 ||
+        serverPort > 65535) {
+        wprintf(L"[Config] Port / ServerPort must be 1-65535\n");
+        return 1;
     }
+    if (serverListenPort != serverPort) {
+        wprintf(L"[Config] Server.Port(%d) != Client.ServerPort(%d)\n", serverListenPort,
+                serverPort);
+        return 1;
+    }
+    // 세션 풀로 MaxUser*2 를 넘기는데 Start 의 connectSession_Max 가 u_short 라
+    // 32767 을 넘기면 값이 조용히 잘린다.
+    if (maxUser < 1 || maxUser > 32767) {
+        wprintf(L"[Config] Server.MaxUser(%d) must be 1-32767\n", maxUser);
+        return 1;
+    }
+    if (N < 1 || messageInterval < 1 || sessionPerThread < 1) {
+        wprintf(L"[Config] Client.ClientCount / MessageInterval / SessionPerThread must be "
+                L"positive\n");
+        return 1;
+    }
+    if (maxUser < N) {
+        wprintf(L"[Config] Server.MaxUser(%d) must be >= Client.ClientCount(%d)\n", maxUser, N);
+        return 1;
+    }
+    if (serverWorkerThreadCnt < 0 || lifetimeMin < 0 || lifetimeMax < 0) {
+        wprintf(L"[Config] WorkerThreadCnt / LifetimeMin / LifetimeMax must not be negative\n");
+        return 1;
+    }
+    if (lifetimeMin > 0 && lifetimeMax <= lifetimeMin) {
+        wprintf(L"[Config] Client.LifetimeMax must be greater than LifetimeMin\n");
+        return 1;
+    }
+    if (lifetimeMin == 0 && lifetimeMax != 0)
+        wprintf(L"[Config] warning: LifetimeMin 0 disables disconnect - LifetimeMax ignored\n");
+
+    DWORD minLifetime = (DWORD)lifetimeMin;
+    DWORD maxLifetime = (DWORD)lifetimeMax;
+
+    wprintf(L"\n=== DummyClient ===\n");
+    wprintf(L"Config       : %hs\n", configPath.c_str());
+    wprintf(L"Server       : %hs:%d\n", serverIP.c_str(), serverPort);
+    wprintf(L"Server(cfg)  : listen %hs, MaxUser %d, worker %hs, Nagle %hs\n", listenIP.c_str(),
+            maxUser, (serverWorkerThreadCnt > 0) ? "configured" : "auto",
+            nagleEnabled ? "enabled" : "disabled");
+    if (!config.GetDefaultedKeys().empty())
+        wprintf(L"Defaulted    : %hs\n", config.GetDefaultedKeys().c_str());
 
     // 프로세서 수 자동 감지 + 스레드/세션 분배
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
     DWORD processorCount = sysInfo.dwNumberOfProcessors;
 
-    int threadCount = (N + IDEAL_PER_THREAD - 1) / IDEAL_PER_THREAD;
+    int threadCount = (N + sessionPerThread - 1) / sessionPerThread;
     if (threadCount > (int)processorCount)
         threadCount = (int)processorCount;
     if (threadCount < 1)
@@ -96,8 +165,8 @@ int wmain(int argc, WCHAR* argv[]) {
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons((u_short)serverPort);
-    if (inet_pton(AF_INET, serverIp, &serverAddr.sin_addr) != 1) {
-        wprintf(L"Invalid IP: %hs\n", serverIp);
+    if (inet_pton(AF_INET, serverIP.c_str(), &serverAddr.sin_addr) != 1) {
+        wprintf(L"Invalid IP: %hs\n", serverIP.c_str());
         WSACleanup();
         return 1;
     }
