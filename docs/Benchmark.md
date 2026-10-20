@@ -152,6 +152,7 @@ Benchmark\
 | `RecvTPS`, `SendTPS` | 샘플 구간의 패킷 수 |
 | `RecvBytes`, `SendBytes` | 샘플 구간의 바이트 수 (TCP/IP 헤더 40B 포함 추정치) |
 | `AcceptTPS` *(서버)* | 샘플 구간의 accept 수 |
+| `RecvTotal` *(클라)* | 수신한 누적 패킷 수 |
 | `VerifiedTotal` *(클라)* | 에코 내용까지 검증한 누적 패킷 수 |
 | `PoolTotal`, `PoolUse`, `PoolFree` | 패킷 풀 전체/사용/여유 |
 | `CpuProcess` | **이 프로세스**의 CPU (코어 수로 나눈 값. 12코어에서 100%면 전 코어 포화) |
@@ -159,6 +160,10 @@ Benchmark\
 | `MemProcessMB` | 이 프로세스의 `Private Bytes` (MB, 소수점 1자리) |
 
 구간 평균만으로 안 보이는 것(특정 시점의 급락, 계단식 메모리 증가)을 추적할 때 본다.
+
+> **`*TPS`는 구간 속도, `*Total`은 누계 스냅샷이다.** 성질이 다르므로 **속도 컬럼을 합산해 누계와 비교하면 안 된다** — 샘플링 루프가 두 값을 읽는 시점이 미세하게 달라 런 끝에서 수백 개가 어긋나고, 이는 유실이 아니다.
+>
+> **정합성은 `RecvTotal`과 `VerifiedTotal`을 직접 비교한다.** 두 카운터는 `OnRecv` 안에서 나란히 증가하므로 항상 같아야 하고, 다르면 패킷 타입 불일치다.
 
 ### 5.2 요약 CSV — 런당 1행
 

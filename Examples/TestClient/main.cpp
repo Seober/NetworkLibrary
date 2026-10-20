@@ -76,10 +76,12 @@ public:
 
     int N = 0;
     std::unique_ptr<ClientState[]> States;
-    std::atomic<int> ConnectCnt{0};
-    std::atomic<int> DisconnectCnt{0};
-    std::atomic<int> RecvCnt{0};
-    std::atomic<int> VerifiedCnt{0};
+    // 누계 카운터 — int 로 두면 104k/s 기준 약 5.7시간에 오버플로된다.
+    // 무제한 모드(Minutes=0) 장기 관찰에서 부호가 뒤집혀 정합성 검사가 무의미해지는 것을 막는다.
+    std::atomic<long long> ConnectCnt{0};
+    std::atomic<long long> DisconnectCnt{0};
+    std::atomic<long long> RecvCnt{0};
+    std::atomic<long long> VerifiedCnt{0};
 };
 
 struct SenderContext {
@@ -101,13 +103,14 @@ struct Sample {
     std::string Timestamp;
     int ElapsedSec;
     int Connected;
-    int ConnectTotal;
-    int DisconnectTotal;
+    long long ConnectTotal;
+    long long DisconnectTotal;
     double RecvTPS;
     double RecvBytes;
     double SendTPS;
     double SendBytes;
-    int VerifiedTotal;
+    long long RecvTotal;
+    long long VerifiedTotal;
     int PoolTotal;
     int PoolUse;
     int PoolFree;
@@ -458,6 +461,9 @@ int wmain(int argc, WCHAR* argv[]) {
         sample.RecvBytes = transmitBuffer[1];
         sample.SendTPS = transmitBuffer[2];
         sample.SendBytes = transmitBuffer[3];
+        // RecvTotal 과 VerifiedTotal 은 붙여서 읽는다 — 이 둘이 정합성 비교쌍이다.
+        // (RecvTPS 는 구간 속도라 합산해서 누계와 비교하면 샘플 경계만큼 어긋난다)
+        sample.RecvTotal = client.RecvCnt.load();
         sample.VerifiedTotal = client.VerifiedCnt.load();
         sample.PoolTotal = client.LogGetPacketPoolTotal();
         sample.PoolUse = client.LogGetPacketPoolUse();
@@ -475,7 +481,7 @@ int wmain(int argc, WCHAR* argv[]) {
             lastTrafficSec = sample.ElapsedSec;
         }
 
-        printf("[%5d s] Conn:%5d  RecvTPS:%7.0f  SendTPS:%7.0f  Verified:%d  Pool[T:%d U:%d F:%d]  "
+        printf("[%5d s] Conn:%5d  RecvTPS:%7.0f  SendTPS:%7.0f  Verified:%lld  Pool[T:%d U:%d F:%d]  "
                "CPU:%.1f%%/%.1f%%  Mem:%.1fMB\n",
                sample.ElapsedSec, sample.Connected, sample.RecvTPS, sample.SendTPS,
                sample.VerifiedTotal, sample.PoolTotal, sample.PoolUse, sample.PoolFree,
@@ -549,16 +555,18 @@ int wmain(int argc, WCHAR* argv[]) {
                 u8"Timestamp(시각),ElapsedSec(경과초),Connected(접속수),"
                 u8"ConnectTotal(누적접속),DisconnectTotal(누적끊김),"
                 u8"RecvTPS(수신TPS),RecvBytes(수신바이트),SendTPS(송신TPS),SendBytes(송신바이트),"
-                u8"VerifiedTotal(검증완료),PoolTotal(풀전체),PoolUse(풀사용),PoolFree(풀여유),"
+                u8"RecvTotal(수신누계),VerifiedTotal(검증완료),"
+                u8"PoolTotal(풀전체),PoolUse(풀사용),PoolFree(풀여유),"
                 u8"CpuProcess(프로세스CPU),CpuProcessor(전체CPU),MemProcessMB(메모리MB)");
         for (const Sample& sample : samples) {
             fprintf(sampleFile,
-                    "%s,%d,%d,%d,%d,%.0f,%.0f,%.0f,%.0f,%d,%d,%d,%d,%.1f,%.1f,%.1f\n",
+                    "%s,%d,%d,%lld,%lld,%.0f,%.0f,%.0f,%.0f,%lld,%lld,%d,%d,%d,"
+                    "%.1f,%.1f,%.1f\n",
                     sample.Timestamp.c_str(), sample.ElapsedSec, sample.Connected,
                     sample.ConnectTotal, sample.DisconnectTotal, sample.RecvTPS, sample.RecvBytes,
-                    sample.SendTPS, sample.SendBytes, sample.VerifiedTotal, sample.PoolTotal,
-                    sample.PoolUse, sample.PoolFree, sample.CpuProcess, sample.CpuProcessor,
-                    sample.MemProcessMB);
+                    sample.SendTPS, sample.SendBytes, sample.RecvTotal, sample.VerifiedTotal,
+                    sample.PoolTotal, sample.PoolUse, sample.PoolFree, sample.CpuProcess,
+                    sample.CpuProcessor, sample.MemProcessMB);
         }
         fclose(sampleFile);
         printf("[TestClient] samples -> %s\n", samplePath.c_str());
@@ -586,7 +594,8 @@ int wmain(int argc, WCHAR* argv[]) {
                     u8"RecvTPS_avg(평균),RecvTPS_p5(하위5%),RecvTPS_p50(중앙값),"
                     u8"RecvTPS_p95(상위5%경계),RecvTPS_min,RecvTPS_max,SendTPS_avg,"
                     u8"Connected_min(최소접속),Connected_avg(평균접속),"
-                    u8"ConnectTotal(누적접속),DisconnectTotal(누적끊김),VerifiedTotal(검증완료),"
+                    u8"ConnectTotal(누적접속),DisconnectTotal(누적끊김),"
+                    u8"RecvTotal(수신누계),VerifiedTotal(검증완료),"
                     u8"Pool_end(종료시풀),Pool_max(최대풀),"
                     u8"Mem_startMB,Mem_endMB,Mem_maxMB,Mem_slopeMBperHour(시간당증가),"
                     u8"Cpu_avg,Cpu_max,CpuProcessor_avg(전체CPU),Cores(코어수),"
@@ -595,7 +604,7 @@ int wmain(int argc, WCHAR* argv[]) {
         fprintf(summaryFile,
                 "%s,%s,%s,%d,%d,%d,%d,%s,%d,%d,%d,%d,"
                 "%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,%.0f,"
-                "%.0f,%.0f,%d,%d,%d,"
+                "%.0f,%.0f,%lld,%lld,%lld,%lld,"
                 "%.0f,%.0f,"
                 "%.1f,%.1f,%.1f,%.2f,"
                 "%.1f,%.1f,%.1f,%d,%s\n",
@@ -607,7 +616,8 @@ int wmain(int argc, WCHAR* argv[]) {
                 Statistics::MinValue(recvTPS), Statistics::MaxValue(recvTPS),
                 Statistics::Average(sendTPS), Statistics::MinValue(connectedCnt),
                 Statistics::Average(connectedCnt), client.ConnectCnt.load(),
-                client.DisconnectCnt.load(), client.VerifiedCnt.load(), poolEnd, poolMax, memStart,
+                client.DisconnectCnt.load(), client.RecvCnt.load(), client.VerifiedCnt.load(),
+                poolEnd, poolMax, memStart,
                 memEnd, memMax, memSlope, Statistics::Average(cpuProcess),
                 Statistics::MaxValue(cpuProcess), Statistics::Average(cpuProcessor), cores,
                 config.GetDefaultedKeys().c_str());
@@ -623,7 +633,8 @@ int wmain(int argc, WCHAR* argv[]) {
     printf("RecvTPS      : avg %.0f / p5 %.0f / p50 %.0f / p95 %.0f\n",
            Statistics::Average(recvTPS), Statistics::Percentile(recvTPS, 0.05),
            Statistics::Percentile(recvTPS, 0.50), Statistics::Percentile(recvTPS, 0.95));
-    printf("Verified     : %d (recv %d)\n", client.VerifiedCnt.load(), client.RecvCnt.load());
+    printf("Verified     : %lld (recv %lld)\n", client.VerifiedCnt.load(),
+           client.RecvCnt.load());
     printf("Memory       : %.1f -> %.1f MB (%.2f MB/hour)\n", memStart, memEnd, memSlope);
 
     // client.Stop()은 ~TestClient → ~NetClient 소멸자가 자동 호출
