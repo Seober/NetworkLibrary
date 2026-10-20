@@ -157,6 +157,18 @@ std::string WideToNarrow(const WCHAR* text) {
     return std::string(buffer);
 }
 
+// timeBeginPeriod 는 반드시 timeEndPeriod 와 짝을 맞춰야 한다.
+// 중간 return 경로가 여럿이라 RAII 로 묶는다.
+// Windows 10 2004 부터 이 설정은 프로세스별이다 - 호출한 프로세스만 혜택을 받으므로
+// 서버와 클라이언트가 각자 요청해야 한다.
+class TimerResolutionScope {
+public:
+    TimerResolutionScope(void) { timeBeginPeriod(1); }
+    ~TimerResolutionScope() { timeEndPeriod(1); }
+    TimerResolutionScope(const TimerResolutionScope&) = delete;
+    TimerResolutionScope& operator=(const TimerResolutionScope&) = delete;
+};
+
 unsigned WINAPI SenderThread(LPVOID param) {
     SenderContext* ctx = (SenderContext*)param;
     TestClient* client = ctx->client;
@@ -165,7 +177,10 @@ unsigned WINAPI SenderThread(LPVOID param) {
     MultiByteToWideChar(CP_ACP, 0, ctx->serverIP, -1, serverIPWide, 64);
 
     while (WaitForSingleObject(ctx->shutdownEvent, 0) != WAIT_OBJECT_0) {
-        DWORD curTick = GetTickCount();
+        // timeGetTime 은 timeBeginPeriod 를 따르도록 문서화되어 있다.
+        // GetTickCount 는 그런 보장이 없어 1ms 요청과 무관하게 약 15.6ms 단위로
+        // 멈춰 있을 수 있고, 그러면 nextSendTime 비교가 틱에 묶여 송신 간격이 왜곡된다.
+        DWORD curTick = timeGetTime();
 
         for (int i = 0; i < client->N; i++) {
             TestClient::ClientState* s = &client->States[i];
@@ -304,6 +319,9 @@ int wmain(int argc, WCHAR* argv[]) {
     if (resolvedWorkerCnt < 1)
         resolvedWorkerCnt = 1;
 
+    // 타이머 해상도는 클라이언트 시작 전에 올려둔다 (SenderThread 가 바로 쓴다).
+    TimerResolutionScope timerScope;
+
     srand((unsigned)GetTickCount());
 
     // --- 클라이언트 시작 ----------------------------------------------------
@@ -327,6 +345,7 @@ int wmain(int argc, WCHAR* argv[]) {
            (workerThreadCnt > 0) ? "" : " (auto)", (serverWorkerCnt > 0) ? "configured" : "auto",
            cores);
     printf("Nagle        : %s\n", nagleEnabled ? "enabled" : "disabled (TCP_NODELAY)");
+    printf("TimerRes     : 1 ms (timeBeginPeriod)\n");
     printf("Load         : N=%d, interval %d-%d ms, mode %d\n", clientCount, sendIntervalMin,
            sendIntervalMax, mode);
 
