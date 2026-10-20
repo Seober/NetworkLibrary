@@ -163,7 +163,30 @@ std::string WideToNarrow(const WCHAR* text) {
 // 서버와 클라이언트가 각자 요청해야 한다.
 class TimerResolutionScope {
 public:
-    TimerResolutionScope(void) { timeBeginPeriod(1); }
+    TimerResolutionScope(void) {
+        timeBeginPeriod(1);
+#ifdef PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION
+        // Windows 11 은 창이 최소화되거나 완전히 가려지면 타이머 해상도 요청을 무시한다.
+        // IGNORE_TIMER_RESOLUTION 스로틀링을 명시적으로 끄면 창 상태와 무관하게 요청이
+        // 존중된다 (Microsoft 문서의 "Always honor Timer Resolution Requests" 예제).
+        // ControlMask = 통제할 메커니즘, StateMask = 0 은 그 메커니즘을 끈다는 뜻.
+        PROCESS_POWER_THROTTLING_STATE throttling = {};
+        throttling.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+        throttling.ControlMask = PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;
+        throttling.StateMask = 0;
+        // 실패를 조용히 넘기면 "창을 안 내리면 괜찮은" 조건부 상태로 돌아가는데,
+        // 그걸 모르고 최소화하면 측정이 조용히 무효가 된다.
+        if (!SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &throttling,
+                                   (DWORD)sizeof(throttling))) {
+            printf("[TimerRes] warning: throttling opt-out failed (err %lu)"
+                   " - keep the console window visible\n",
+                   GetLastError());
+        }
+#else
+#pragma message("warning: SDK lacks PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION" \
+                " - timer resolution may drop while minimized")
+#endif
+    }
     ~TimerResolutionScope() { timeEndPeriod(1); }
     TimerResolutionScope(const TimerResolutionScope&) = delete;
     TimerResolutionScope& operator=(const TimerResolutionScope&) = delete;
