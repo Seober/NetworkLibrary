@@ -100,7 +100,9 @@ struct SenderContext {
 
 // 1초 주기 샘플. 메모리에 모았다가 정상 종료 시 한 번에 기록한다.
 struct Sample {
-    std::string Timestamp;
+    // "YYYY-MM-DD HH:MM:SS" + NUL = 20. std::string 이면 19자가 MSVC SSO(15자) 를 넘어
+    // 샘플마다 힙 블록이 따로 생긴다 — 측정 중 메모리를 평탄하게 두려고 고정 배열로 둔다.
+    char Timestamp[20];
     int ElapsedSec;
     int Connected;
     long long ConnectTotal;
@@ -138,10 +140,16 @@ std::string GetExeDirectory(void) {
     return full.substr(0, pos + 1);
 }
 
+// 샘플 1건마다 호출되는 경로 — 호출자 버퍼에 직접 쓴다 (힙 할당 없음).
+void FormatTime(const SYSTEMTIME& time, char* out, size_t size) {
+    sprintf_s(out, size, "%04d-%02d-%02d %02d:%02d:%02d", time.wYear, time.wMonth, time.wDay,
+              time.wHour, time.wMinute, time.wSecond);
+}
+
+// 요약 출력용 — 런당 1회라 할당해도 무방하다.
 std::string FormatTime(const SYSTEMTIME& time) {
     char buffer[32];
-    sprintf_s(buffer, "%04d-%02d-%02d %02d:%02d:%02d", time.wYear, time.wMonth, time.wDay,
-              time.wHour, time.wMinute, time.wSecond);
+    FormatTime(time, buffer, sizeof(buffer));
     return std::string(buffer);
 }
 
@@ -375,15 +383,23 @@ int wmain(int argc, WCHAR* argv[]) {
     printf("Load         : N=%d, interval %d-%d ms, mode %d\n", clientCount, sendIntervalMin,
            sendIntervalMax, mode);
 
-    // 실행 시간 = 분석 시간 + 앞뒤 trim. Minutes=0 이면 무제한(Q 로 종료).
+    // 실행 시간 = 분석 시간 + 앞뒤 trim. Minutes=0 이면 1주 상한까지 (또는 Q 로 종료).
     const int trimSec = trimMinutes * 60;
     const int runDurationSec =
-        (analysisMinutes > 0) ? ((analysisMinutes + trimMinutes * 2) * 60) : 0;
-    if (runDurationSec > 0)
+        (analysisMinutes > 0) ? ((analysisMinutes + trimMinutes * 2) * 60) : kUnlimitedRunCapSec;
+    if (analysisMinutes > 0)
         printf("Duration     : %d min (analysis %d min + trim %d min x 2)\n",
                analysisMinutes + trimMinutes * 2, analysisMinutes, trimMinutes);
     else
-        printf("Duration     : unlimited (trim %d min each side)\n", trimMinutes);
+        printf("Duration     : unlimited, cap %d h (trim %d min each side)\n",
+               kUnlimitedRunCapSec / 3600, trimMinutes);
+
+    // 샘플 주기가 1초 고정이라 샘플 수 상한 = runDurationSec. 접속 폭주 전에 미리
+    // 확보해, 측정 중 vector 재할당이 Mem 열(Private Bytes)에 섞이지 않게 한다.
+    std::vector<Sample> samples;
+    samples.reserve((size_t)runDurationSec + 1 + kSampleReserveMargin);
+    printf("SampleBuf    : %zu samples, %.1f MB reserved\n", samples.capacity(),
+           (double)samples.capacity() * sizeof(Sample) / 1000000.0);
 
     DWORD startTick = GetTickCount();
     std::string validity = "OK";
@@ -428,7 +444,6 @@ int wmain(int argc, WCHAR* argv[]) {
     printf("\nPress Q to quit\n\n");
 
     // --- 측정 루프 ---------------------------------------------------------
-    std::vector<Sample> samples;
     MonitoringTool monitor;
     DWORD transmitBuffer[4] = {
         0,
@@ -451,8 +466,8 @@ int wmain(int argc, WCHAR* argv[]) {
         SYSTEMTIME now;
         GetLocalTime(&now);
 
-        Sample sample;
-        sample.Timestamp = FormatTime(now);
+        Sample sample{};
+        FormatTime(now, sample.Timestamp, sizeof(sample.Timestamp));
         sample.ElapsedSec = (int)((GetTickCount() - startTick) / 1000);
         sample.Connected = (int)client.GetConnectedSessionCnt();
         sample.ConnectTotal = client.ConnectCnt.load();
@@ -487,8 +502,9 @@ int wmain(int argc, WCHAR* argv[]) {
                sample.VerifiedTotal, sample.PoolTotal, sample.PoolUse, sample.PoolFree,
                sample.CpuProcess, sample.CpuProcessor, sample.MemProcessMB);
 
-        if (runDurationSec > 0 && sample.ElapsedSec >= runDurationSec) {
-            printf("\n[TestClient] duration reached - run finished\n");
+        if (sample.ElapsedSec >= runDurationSec) {
+            printf("\n[TestClient] %s - run finished\n",
+                   analysisMinutes > 0 ? "duration reached" : "unlimited run cap reached");
             break;
         }
 
@@ -562,7 +578,7 @@ int wmain(int argc, WCHAR* argv[]) {
             fprintf(sampleFile,
                     "%s,%d,%d,%lld,%lld,%.0f,%.0f,%.0f,%.0f,%lld,%lld,%d,%d,%d,"
                     "%.1f,%.1f,%.1f\n",
-                    sample.Timestamp.c_str(), sample.ElapsedSec, sample.Connected,
+                    sample.Timestamp, sample.ElapsedSec, sample.Connected,
                     sample.ConnectTotal, sample.DisconnectTotal, sample.RecvTPS, sample.RecvBytes,
                     sample.SendTPS, sample.SendBytes, sample.RecvTotal, sample.VerifiedTotal,
                     sample.PoolTotal, sample.PoolUse, sample.PoolFree, sample.CpuProcess,
